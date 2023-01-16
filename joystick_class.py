@@ -33,7 +33,7 @@ class Joystick:
         # Gets the device name
         buf = array.array('B', [0] * 64)
         ioctl(self.js_device, 0x80006a13 + (0x10000 * len(buf)), buf)
-        self.js_name = buf.tostring().rstrip(b'\x00').decode('utf-8')
+        self.js_name = buf.tobytes().rstrip(b'\x00').decode('utf-8')
         print('        Device name: %s' % self.js_name)
 
         # Gets the number of axes and buttons

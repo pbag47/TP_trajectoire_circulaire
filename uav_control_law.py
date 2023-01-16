@@ -10,15 +10,15 @@ def circle(uav: Agent):
     Generates the coordinates (x, y, z, and yaw) of the next position to reach on the circle
     """
 
-    t = uav.circle_t    # (s)
+    t = uav.circle_t  # (s)
 
     # ------------------ A remplir --------------------- #
     #
     #
-    targeted_x = 0      # (m)
-    targeted_y = 0      # (m)
-    targeted_z = 0      # (m)
-    targeted_yaw = 0    # (rad)
+    targeted_x = 0  # (m)
+    targeted_y = 0  # (m)
+    targeted_z = 0  # (m)
+    targeted_yaw = 0  # (rad)
     #
     #
     # -------------------------------------------------- #
@@ -27,8 +27,8 @@ def circle(uav: Agent):
         roll, pitch, yaw_rate, thrust = control_law(uav, targeted_x, targeted_y, targeted_z, targeted_yaw)
         return roll, pitch, yaw_rate, thrust, targeted_x, targeted_y
     except Exception as e:
-        print(' -- Warning -- Error |', e,  '| detected in uav_control_law.control_law() function,'
-              ' switching to Standby state')
+        print(' -- Warning -- Error |', e, '| detected in uav_control_law.control_law() function,'
+                                           ' switching to Standby state')
         uav.standby()
 
 
@@ -39,17 +39,17 @@ def circle_tangent_x_axis(uav: Agent):
     Generates the coordinates (x, y, z, and yaw) of the next position to reach on the circle
     """
 
-    t = uav.circle_t        # (s)
+    t = uav.circle_t  # (s)
     # vx = uav.velocity[0]    # (m/s)
     # vy = uav.velocity[1]    # (m/s)
 
     # ------------------ A remplir --------------------- #
     #
     #
-    targeted_x = 0          # (m)
-    targeted_y = 0          # (m)
-    targeted_z = 0          # (m)
-    targeted_yaw = 0        # (rad)
+    targeted_x = 0  # (m)
+    targeted_y = 0  # (m)
+    targeted_z = 0  # (m)
+    targeted_yaw = 0  # (rad)
     #
     #
     # -------------------------------------------------- #
@@ -58,8 +58,8 @@ def circle_tangent_x_axis(uav: Agent):
         roll, pitch, yaw_rate, thrust = control_law(uav, targeted_x, targeted_y, targeted_z, targeted_yaw)
         return roll, pitch, yaw_rate, thrust, targeted_x, targeted_y
     except Exception as e:
-        print(' -- Warning -- Error |', e,  '| detected in uav_control_law.control_law() function,'
-              ' switching to Standby state')
+        print(' -- Warning -- Error |', e, '| detected in uav_control_law.control_law() function,'
+                                           ' switching to Standby state')
         uav.standby()
 
 
@@ -70,9 +70,9 @@ def point_of_interest(uav: Agent, target: Robot):
     Generates the coordinates (x, y, z, and yaw) of the next position to reach on the circle
     """
 
-    t = uav.circle_t            # (s)
-    robot_x = target.extpos.x   # (m)
-    robot_y = target.extpos.y   # (m)
+    t = uav.circle_t  # (s)
+    robot_x = target.extpos.x  # (m)
+    robot_y = target.extpos.y  # (m)
     # x = uav.extpos.x            # (m)
     # y = uav.extpos.y            # (m)
     # vx = uav.velocity[0]        # (m/s)
@@ -81,10 +81,10 @@ def point_of_interest(uav: Agent, target: Robot):
     # ------------------ A remplir --------------------- #
     #
     #
-    targeted_x = 0              # (m)
-    targeted_y = 0              # (m)
-    targeted_z = 0              # (m)
-    targeted_yaw = 0            # (rad)
+    targeted_x = 0  # (m)
+    targeted_y = 0  # (m)
+    targeted_z = 0  # (m)
+    targeted_yaw = 0  # (rad)
     #
     #
     # -------------------------------------------------- #
@@ -93,8 +93,8 @@ def point_of_interest(uav: Agent, target: Robot):
         roll, pitch, yaw_rate, thrust = control_law(uav, targeted_x, targeted_y, targeted_z, targeted_yaw)
         return roll, pitch, yaw_rate, thrust, targeted_x, targeted_y
     except Exception as e:
-        print(' -- Warning -- Error |', e,  '| detected in uav_control_law.control_law() function,'
-              ' switching to Standby state')
+        print(' -- Warning -- Error |', e, '| detected in uav_control_law.control_law() function,'
+                                           ' switching to Standby state')
         uav.standby()
 
 
@@ -104,21 +104,21 @@ def control_law(uav: Agent, targeted_x: float, targeted_y: float, targeted_z: fl
     based on the UAV current state and its targeted position
     """
 
-    delta_t = uav.delta_t                       # (s)
-    measured_x = uav.extpos.x                   # (m)
-    measured_y = uav.extpos.y                   # (m)
-    measured_z = uav.extpos.z                   # (m)
-    measured_yaw = uav.yaw * np.pi / 180        # (rad)
-    measured_vx = uav.velocity[0]               # (m/s)
-    measured_vy = uav.velocity[1]               # (m/s)
-    measured_vz = uav.velocity[2]               # (m/s)
-    previous_iz = uav.previous_iz               # (PWM)
+    delta_t = uav.delta_t  # (s)
+    measured_x = uav.extpos.x  # (m)
+    measured_y = uav.extpos.y  # (m)
+    measured_z = uav.extpos.z  # (m)
+    measured_yaw = uav.yaw * np.pi / 180  # (rad)
+    measured_vx = uav.velocity[0]  # (m/s)
+    measured_vy = uav.velocity[1]  # (m/s)
+    measured_vz = uav.velocity[2]  # (m/s)
+    previous_iz = uav.previous_iz  # (PWM)
 
     # ------------------ A remplir --------------------- #
     #
     #
-    pitch = 0                                   # (rad)
-    roll = 0                                    # (rad)
+    pitch = 0  # (rad)
+    roll = 0  # (rad)
     #
     #
     # -------------------------------------------------- #
@@ -144,7 +144,7 @@ def control_law(uav: Agent, targeted_x: float, targeted_y: float, targeted_z: fl
     else:
         yaw_error = yaw_error_0
 
-    yaw_rate = - round(yaw_kp * yaw_error * 180 / np.pi)        # (°/s)
+    yaw_rate = - round(yaw_kp * yaw_error * 180 / np.pi)  # (°/s)
 
     # -- Height control law -- #
     z_kp = 32500
@@ -163,9 +163,9 @@ def control_law(uav: Agent, targeted_x: float, targeted_y: float, targeted_z: fl
     pitch = pitch * 180 / np.pi
 
     # -- Attitude saturation check -- #
-    max_roll = 20           # (°)
-    max_pitch = 20          # (°)
-    max_yaw_rate = 180      # (°/s)
+    max_roll = 20  # (°)
+    max_pitch = 20  # (°)
+    max_yaw_rate = 180  # (°/s)
 
     thrust = round(thrust)
     if thrust > 65000:
@@ -190,10 +190,10 @@ def control_law(uav: Agent, targeted_x: float, targeted_y: float, targeted_z: fl
 
     # -- Log flight data -- #
     uav.csv_logger.writerow([uav.name, uav.timestamp,
-                              measured_x, measured_y, measured_z, measured_yaw * 180 / np.pi,
-                              measured_vx, measured_vy, measured_vz,
-                              targeted_x, targeted_y, targeted_z, targeted_yaw * 180 / np.pi,
-                              roll, pitch, yaw_rate, thrust])
+                             measured_x, measured_y, measured_z, measured_yaw * 180 / np.pi,
+                             measured_vx, measured_vy, measured_vz,
+                             targeted_x, targeted_y, targeted_z, targeted_yaw * 180 / np.pi,
+                             roll, pitch, yaw_rate, thrust])
 
     # -- Prepare for next iteration -- #
     uav.previous_iz = iz

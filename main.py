@@ -1,4 +1,6 @@
 import asyncio
+import time
+
 import cflib.crtp
 import csv
 import pynput.keyboard
@@ -102,7 +104,9 @@ def main():
     target.csv_logger = writer
 
     # -- QTM connection and initial frame acquisition ---------------------------- #
-    qtm_connection: QRTConnection = asyncio.get_event_loop().run_until_complete(
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    qtm_connection: QRTConnection = loop.run_until_complete(
         qtm_tools.connect_to_qtm(qtm_ip_address))
     header, markers, timestamp = qtm_tools.frame_acquisition(qtm_connection)
     print(header.marker_count, 'markers found by QTM during initialization')
@@ -114,21 +118,24 @@ def main():
     _ = Joystick(SWARM_MANAGER)
 
     uav.connect_cf()
+    time.sleep(2)
+    uav.setup_parameters()
+    uav.start_attitude_logs()
     SWARM_MANAGER.add_agent(uav)
     SWARM_MANAGER.manual_flight_agents_list.append(uav.name)
     SWARM_MANAGER.robot_list = [target]
 
     # -- Real-time stream start -------------------------------------------------- #
     RUN_TRACKER = True
-    asyncio.ensure_future(start_qtm_streaming(qtm_connection))
-    asyncio.ensure_future(keyboard_handler())
-    asyncio.get_event_loop().run_forever()
+    asyncio.ensure_future(start_qtm_streaming(qtm_connection), loop=loop)
+    asyncio.ensure_future(keyboard_handler(), loop=loop)
+    loop.run_forever()
 
     # -- Disconnects the Crazyflies, stops the QTM stream and disconnects QTM ---- #
     uav.stop()
     uav.cf.close_link()
 
-    asyncio.get_event_loop().run_until_complete(qtm_tools.disconnect_qtm(qtm_connection))
+    loop.run_until_complete(qtm_tools.disconnect_qtm(qtm_connection))
     file.close()
 
 
