@@ -87,13 +87,10 @@ class Agent:
 
     def cf_connected_callback(self, _):
         self.enabled = True
-        # self.setup_parameters()
         print('<', self.name, '> : UAV connected')
         self.cf.commander.send_setpoint(0, 0, 0, 0)
-        # self.start_attitude_logs()
 
     def setup_parameters(self):
-        # time.sleep(1.5)
         log_config = LogConfig(name=self.name + ' battery voltage', period_in_ms=50)
         log_config.add_variable('pm.vbat', 'float')  # Retrieves the battery level
         self.cf.log.add_config(log_config)
