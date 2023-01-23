@@ -1,4 +1,4 @@
-import numpy as np
+import numpy
 from agent_class import Agent
 from robot_class import Robot
 
@@ -108,7 +108,7 @@ def control_law(uav: Agent, targeted_x: float, targeted_y: float, targeted_z: fl
     measured_x = uav.extpos.x  # (m)
     measured_y = uav.extpos.y  # (m)
     measured_z = uav.extpos.z  # (m)
-    measured_yaw = uav.yaw * np.pi / 180  # (rad)
+    measured_yaw = uav.yaw * numpy.pi / 180  # (rad)
     measured_vx = uav.velocity[0]  # (m/s)
     measured_vy = uav.velocity[1]  # (m/s)
     measured_vz = uav.velocity[2]  # (m/s)
@@ -125,17 +125,17 @@ def control_law(uav: Agent, targeted_x: float, targeted_y: float, targeted_z: fl
 
     # -- Yaw control law -- #
     yaw_kp = 10
-    targeted_yaw = targeted_yaw % (2 * np.pi)
-    if targeted_yaw > np.pi:
-        targeted_yaw = targeted_yaw - (2 * np.pi)
+    targeted_yaw = targeted_yaw % (2 * numpy.pi)
+    if targeted_yaw > numpy.pi:
+        targeted_yaw = targeted_yaw - (2 * numpy.pi)
 
-    measured_yaw = measured_yaw % (2 * np.pi)
-    if measured_yaw > np.pi:
-        measured_yaw = measured_yaw - (2 * np.pi)
+    measured_yaw = measured_yaw % (2 * numpy.pi)
+    if measured_yaw > numpy.pi:
+        measured_yaw = measured_yaw - (2 * numpy.pi)
 
     yaw_error_0 = targeted_yaw - measured_yaw
-    yaw_error_1 = targeted_yaw - measured_yaw + 2 * np.pi
-    yaw_error_2 = targeted_yaw - measured_yaw - 2 * np.pi
+    yaw_error_1 = targeted_yaw - measured_yaw + 2 * numpy.pi
+    yaw_error_2 = targeted_yaw - measured_yaw - 2 * numpy.pi
 
     if abs(yaw_error_1) < abs(yaw_error_0) and abs(yaw_error_1) < abs(yaw_error_2):
         yaw_error = yaw_error_1
@@ -144,7 +144,7 @@ def control_law(uav: Agent, targeted_x: float, targeted_y: float, targeted_z: fl
     else:
         yaw_error = yaw_error_0
 
-    yaw_rate = - round(yaw_kp * yaw_error * 180 / np.pi)  # (°/s)
+    yaw_rate = - round(yaw_kp * yaw_error * 180 / numpy.pi)  # (°/s)
 
     # -- Height control law -- #
     z_kp = 32500
@@ -159,8 +159,8 @@ def control_law(uav: Agent, targeted_x: float, targeted_y: float, targeted_z: fl
     thrust = thrust_at_steady_state + pz + iz + dz
 
     # -- Roll and Pitch units conversion (rad to °) -- #
-    roll = roll * 180 / np.pi
-    pitch = pitch * 180 / np.pi
+    roll = roll * 180 / numpy.pi
+    pitch = pitch * 180 / numpy.pi
 
     # -- Attitude saturation check -- #
     max_roll = 20  # (°)
@@ -190,9 +190,9 @@ def control_law(uav: Agent, targeted_x: float, targeted_y: float, targeted_z: fl
 
     # -- Log flight data -- #
     uav.csv_logger.writerow([uav.name, uav.timestamp,
-                             measured_x, measured_y, measured_z, measured_yaw * 180 / np.pi,
+                             measured_x, measured_y, measured_z, measured_yaw * 180 / numpy.pi,
                              measured_vx, measured_vy, measured_vz,
-                             targeted_x, targeted_y, targeted_z, targeted_yaw * 180 / np.pi,
+                             targeted_x, targeted_y, targeted_z, targeted_yaw * 180 / numpy.pi,
                              roll, pitch, yaw_rate, thrust])
 
     # -- Prepare for next iteration -- #

@@ -1,20 +1,17 @@
 import asyncio
 import csv
+import numpy
 import qasync
-# import random
-import sys
-
 import qwt
-
+# import random
 import sim_user_interface
+import sys
 import uav_control_law
-
-import numpy as np
 
 from agent_class import Agent
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPen
-from PyQt5.QtWidgets import (QApplication, QMainWindow)
+from PyQt5.QtWidgets import QApplication, QMainWindow
 from qwt import QwtPlotCurve, QwtPlotGrid
 from qtm.packet import RT3DMarkerPositionNoLabel
 from robot_class import Robot
@@ -241,7 +238,7 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
             if self.uav.state == 'step':
                 xg = 1
                 yg = 1
-                roll, pitch, yaw_rate, _ = uav_control_law.control_law(self.uav, xg, yg, 0.4, self.psi*np.pi/180)
+                roll, pitch, yaw_rate, _ = uav_control_law.control_law(self.uav, xg, yg, 0.4, self.psi * numpy.pi / 180)
 
             if self.uav.state == 'circle':
                 roll, pitch, yaw_rate, _, xg, yg = uav_control_law.circle(self.uav)
@@ -253,14 +250,14 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
                 self.update_target_coordinates()
                 roll, pitch, yaw_rate, _, xg, yg = uav_control_law.point_of_interest(self.uav, self.robot)
 
-            roll = roll * np.pi / 180
-            pitch = pitch * np.pi / 180
+            roll = roll * numpy.pi / 180
+            pitch = pitch * numpy.pi / 180
 
             ax_n = 9.81 * pitch
             ay_n = - 9.81 * roll
 
-            ax_e = ax_n * np.cos(self.uav.yaw * np.pi / 180) - ay_n * np.sin(self.uav.yaw * np.pi / 180)
-            ay_e = ax_n * np.sin(self.uav.yaw * np.pi / 180) + ay_n * np.cos(self.uav.yaw * np.pi / 180)
+            ax_e = ax_n * numpy.cos(self.uav.yaw * numpy.pi / 180) - ay_n * numpy.sin(self.uav.yaw * numpy.pi / 180)
+            ay_e = ax_n * numpy.sin(self.uav.yaw * numpy.pi / 180) + ay_n * numpy.cos(self.uav.yaw * numpy.pi / 180)
 
             self.vx_e = self.vx_e + ax_e * self.delta_t
             self.vy_e = self.vy_e + ay_e * self.delta_t
@@ -295,13 +292,13 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
             self.graph_yg.append(yg)
 
             self.graph_x_sight_left = [self.uav.extpos.x,
-                                       self.uav.extpos.x + 1 * np.cos((self.uav.yaw + 20) * np.pi / 180)]
+                                       self.uav.extpos.x + 1 * numpy.cos((self.uav.yaw + 20) * numpy.pi / 180)]
             self.graph_y_sight_left = [self.uav.extpos.y,
-                                       self.uav.extpos.y + 1 * np.sin((self.uav.yaw + 20) * np.pi / 180)]
+                                       self.uav.extpos.y + 1 * numpy.sin((self.uav.yaw + 20) * numpy.pi / 180)]
             self.graph_x_sight_right = [self.uav.extpos.x,
-                                        self.uav.extpos.x + 1 * np.cos((self.uav.yaw - 20) * np.pi / 180)]
+                                        self.uav.extpos.x + 1 * numpy.cos((self.uav.yaw - 20) * numpy.pi / 180)]
             self.graph_y_sight_right = [self.uav.extpos.y,
-                                        self.uav.extpos.y + 1 * np.sin((self.uav.yaw - 20) * np.pi / 180)]
+                                        self.uav.extpos.y + 1 * numpy.sin((self.uav.yaw - 20) * numpy.pi / 180)]
 
             self.graph_time = self.graph_time[1:]
             self.graph_time.append(self.uav.timestamp)
@@ -319,11 +316,11 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
         #     yr = -0.5
 
         radius = 0.5  # (m)
-        period = 8 * np.pi  # (s)
+        period = 8 * numpy.pi  # (s)
         frequency = 1 / period  # (Hz)
-        omega = 2 * np.pi * frequency  # (rad/s)
-        xr = radius * np.cos(omega * self.uav.circle_t)
-        yr = radius * np.sin(omega * self.uav.circle_t)
+        omega = 2 * numpy.pi * frequency  # (rad/s)
+        xr = radius * numpy.cos(omega * self.uav.circle_t)
+        yr = radius * numpy.sin(omega * self.uav.circle_t)
 
         self.robot.extpos = RT3DMarkerPositionNoLabel(xr, yr, 0, 0)
 

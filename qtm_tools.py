@@ -1,6 +1,6 @@
 import asyncio
+import numpy
 import qtm
-import numpy as np
 
 from agent_class import Agent
 from qtm import QRTConnection
@@ -151,9 +151,9 @@ def distance_init_pos_to_marker(position_1: [float] * 3, position_2: [float] * 3
     Distance (m) between marker_1 position [x1(m), y1(m), z1(m)]
     and marker_2 position [x2(m), y2(m), z2(m)]
     """
-    d = np.sqrt((position_1[0] - position_2[0]) ** 2
-                + (position_1[1] - position_2[1]) ** 2
-                + (position_1[2] - position_2[2]) ** 2)
+    d = numpy.sqrt((position_1[0] - position_2[0]) ** 2
+                   + (position_1[1] - position_2[1]) ** 2
+                   + (position_1[2] - position_2[2]) ** 2)
     return d
 
 
@@ -164,9 +164,9 @@ def _distance_between_markers(marker_1: RT3DMarkerPositionNoLabel, marker_2: RT3
     Warning !   Internal method developed for a specific use case (units mismatch)
                 User should not call this method for another purpose
     """
-    d = np.sqrt((marker_1.x - marker_2.x * 10 ** -3) ** 2
-                + (marker_1.y - marker_2.y * 10 ** -3) ** 2
-                + (marker_1.z - marker_2.z * 10 ** -3) ** 2)
+    d = numpy.sqrt((marker_1.x - marker_2.x * 10 ** -3) ** 2
+                   + (marker_1.y - marker_2.y * 10 ** -3) ** 2
+                   + (marker_1.z - marker_2.z * 10 ** -3) ** 2)
     return d
 
 

@@ -1,4 +1,4 @@
-import numpy as np
+import numpy
 from agent_class import Agent
 from robot_class import Robot
 
@@ -17,13 +17,13 @@ def circle(uav: Agent) -> (float, float, float, int, float, float):
     #
     # -- Parameters -- #
     radius = 0.5  # (m)
-    period = 2 * np.pi  # (s)
+    period = 2 * numpy.pi  # (s)
     frequency = 1 / period  # (Hz)
-    omega = 2 * np.pi * frequency  # (rad/s)
+    omega = 2 * numpy.pi * frequency  # (rad/s)
     #
     # -- Target point -- #
-    targeted_x = radius * np.cos(omega * t)  # (m)
-    targeted_y = radius * np.sin(omega * t)  # (m)
+    targeted_x = radius * numpy.cos(omega * t)  # (m)
+    targeted_y = radius * numpy.sin(omega * t)  # (m)
     targeted_z = 0.5  # (m)
     targeted_yaw = 0  # (°)
     #
@@ -55,18 +55,18 @@ def circle_tangent_x_axis(uav: Agent) -> (float, float, float, int, float, float
     #
     # -- Parameters -- #
     radius = 0.5  # (m)
-    period = 2 * np.pi  # (s)
+    period = 2 * numpy.pi  # (s)
     frequency = 1 / period  # (Hz)
-    omega = 2 * np.pi * frequency  # (rad/s)
+    omega = 2 * numpy.pi * frequency  # (rad/s)
     #
     # -- Target point -- #
-    targeted_x = radius * np.cos(omega * t)  # (m)
-    targeted_y = radius * np.sin(omega * t)  # (m)
+    targeted_x = radius * numpy.cos(omega * t)  # (m)
+    targeted_y = radius * numpy.sin(omega * t)  # (m)
     targeted_z = 0.5  # (m)
     #
     #
     # targeted_yaw = - np.arctan2(vx, vy) + np.pi/2   # (rad)
-    targeted_yaw = omega * t + np.pi / 2  # (rad)
+    targeted_yaw = omega * t + numpy.pi / 2  # (rad)
     #
     #
     # -------------------------------------------------- #
@@ -100,16 +100,16 @@ def point_of_interest(uav: Agent, target: Robot) -> (float, float, float, int, f
     #
     # -- Parameters -- #
     radius = 0.5  # (m)
-    period = 2 * np.pi  # (s)
+    period = 2 * numpy.pi  # (s)
     frequency = 1 / period  # (Hz)
-    omega = 2 * np.pi * frequency  # (rad/s)
+    omega = 2 * numpy.pi * frequency  # (rad/s)
     #
     # -- Target point -- #
-    targeted_x = robot_x + radius * np.cos(omega * t)  # (m)
-    targeted_y = robot_y + radius * np.sin(omega * t)  # (m)
+    targeted_x = robot_x + radius * numpy.cos(omega * t)  # (m)
+    targeted_y = robot_y + radius * numpy.sin(omega * t)  # (m)
     targeted_z = 0.5  # (m)
     #
-    targeted_yaw = - np.arctan2(robot_x - x, robot_y - y) + np.pi / 2  # (rad)
+    targeted_yaw = - numpy.arctan2(robot_x - x, robot_y - y) + numpy.pi / 2  # (rad)
     # targeted_yaw = - np.arctan2(vx, vy) + np.pi   # (rad)
     # targeted_yaw = omega * t + np.pi  # (rad)
     #
@@ -139,7 +139,7 @@ def control_law(uav: Agent,
     measured_x = uav.extpos.x  # (m)
     measured_y = uav.extpos.y  # (m)
     measured_z = uav.extpos.z  # (m)
-    measured_yaw = uav.yaw * np.pi / 180  # (rad)
+    measured_yaw = uav.yaw * numpy.pi / 180  # (rad)
     measured_vx = uav.velocity[0]  # (m/s)
     measured_vy = uav.velocity[1]  # (m/s)
     measured_vz = uav.velocity[2]  # (m/s)
@@ -157,10 +157,10 @@ def control_law(uav: Agent,
     y_error = targeted_y - measured_y
     #
     # -- Coordinates system change (rotation matrix) -- #
-    xn_error = x_error * np.cos(measured_yaw) + y_error * np.sin(measured_yaw)
-    yn_error = - x_error * np.sin(measured_yaw) + y_error * np.cos(measured_yaw)
-    xn_velocity = measured_vx * np.cos(measured_yaw) + measured_vy * np.sin(measured_yaw)
-    yn_velocity = - measured_vx * np.sin(measured_yaw) + measured_vy * np.cos(measured_yaw)
+    xn_error = x_error * numpy.cos(measured_yaw) + y_error * numpy.sin(measured_yaw)
+    yn_error = - x_error * numpy.sin(measured_yaw) + y_error * numpy.cos(measured_yaw)
+    xn_velocity = measured_vx * numpy.cos(measured_yaw) + measured_vy * numpy.sin(measured_yaw)
+    yn_velocity = - measured_vx * numpy.sin(measured_yaw) + measured_vy * numpy.cos(measured_yaw)
     #
     # -- Pitch control law -- #
     px = xy_kp * xn_error
@@ -177,17 +177,17 @@ def control_law(uav: Agent,
 
     # -- Yaw control law -- #
     yaw_kp = 5
-    targeted_yaw = targeted_yaw % (2 * np.pi)
-    if targeted_yaw > np.pi:
-        targeted_yaw = targeted_yaw - (2 * np.pi)
+    targeted_yaw = targeted_yaw % (2 * numpy.pi)
+    if targeted_yaw > numpy.pi:
+        targeted_yaw = targeted_yaw - (2 * numpy.pi)
 
-    measured_yaw = measured_yaw % (2 * np.pi)
-    if measured_yaw > np.pi:
-        measured_yaw = measured_yaw - (2 * np.pi)
+    measured_yaw = measured_yaw % (2 * numpy.pi)
+    if measured_yaw > numpy.pi:
+        measured_yaw = measured_yaw - (2 * numpy.pi)
 
     yaw_error_0 = targeted_yaw - measured_yaw
-    yaw_error_1 = targeted_yaw - measured_yaw + 2 * np.pi
-    yaw_error_2 = targeted_yaw - measured_yaw - 2 * np.pi
+    yaw_error_1 = targeted_yaw - measured_yaw + 2 * numpy.pi
+    yaw_error_2 = targeted_yaw - measured_yaw - 2 * numpy.pi
 
     if abs(yaw_error_1) < abs(yaw_error_0) and abs(yaw_error_1) < abs(yaw_error_2):
         yaw_error = yaw_error_1
@@ -196,7 +196,7 @@ def control_law(uav: Agent,
     else:
         yaw_error = yaw_error_0
 
-    yaw_rate = - round(yaw_kp * yaw_error * 180 / np.pi)  # (°/s)
+    yaw_rate = - round(yaw_kp * yaw_error * 180 / numpy.pi)  # (°/s)
 
     # -- Height control law -- #
     z_kp = 32500
@@ -211,8 +211,8 @@ def control_law(uav: Agent,
     thrust = thrust_at_steady_state + pz + iz + dz
 
     # -- Roll and Pitch units conversion (rad to °) -- #
-    roll = roll * 180 / np.pi
-    pitch = pitch * 180 / np.pi
+    roll = roll * 180 / numpy.pi
+    pitch = pitch * 180 / numpy.pi
 
     # -- Attitude saturation check -- #
     max_roll = 20  # (°)
@@ -242,9 +242,9 @@ def control_law(uav: Agent,
 
     # -- Log flight data -- #
     uav.csv_logger.writerow([uav.name, uav.timestamp,
-                             measured_x, measured_y, measured_z, measured_yaw * 180 / np.pi,
+                             measured_x, measured_y, measured_z, measured_yaw * 180 / numpy.pi,
                              measured_vx, measured_vy, measured_vz,
-                             targeted_x, targeted_y, targeted_z, targeted_yaw * 180 / np.pi,
+                             targeted_x, targeted_y, targeted_z, targeted_yaw * 180 / numpy.pi,
                              roll, pitch, yaw_rate, thrust])
 
     # -- Prepare for next iteration -- #

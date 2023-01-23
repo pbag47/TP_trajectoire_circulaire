@@ -1,4 +1,4 @@
-import numpy as np
+import numpy
 import uav_control_law
 
 from agent_class import Agent
@@ -83,30 +83,30 @@ class SwarmObject:
         kp = 0.50
         ks = 0.1
         if self.manual_x >= 0:
-            agent.standby_position[0] = agent.extpos.x - kp * np.sqrt(self.manual_x)
+            agent.standby_position[0] = agent.extpos.x - kp * numpy.sqrt(self.manual_x)
             if agent.standby_position[0] < agent.x_boundaries[0] + ks:
                 agent.standby_position[0] = agent.x_boundaries[0] + ks
         else:
-            agent.standby_position[0] = agent.extpos.x + kp * np.sqrt(-self.manual_x)
+            agent.standby_position[0] = agent.extpos.x + kp * numpy.sqrt(-self.manual_x)
             if agent.standby_position[0] > agent.x_boundaries[1] - ks:
                 agent.standby_position[0] = agent.x_boundaries[1] - ks
         if self.manual_y >= 0:
-            agent.standby_position[1] = agent.extpos.y - kp * np.sqrt(self.manual_y)
+            agent.standby_position[1] = agent.extpos.y - kp * numpy.sqrt(self.manual_y)
             if agent.standby_position[1] < agent.y_boundaries[0] + ks:
                 agent.standby_position[1] = agent.y_boundaries[0] + ks
         else:
-            agent.standby_position[1] = agent.extpos.y + kp * np.sqrt(-self.manual_y)
+            agent.standby_position[1] = agent.extpos.y + kp * numpy.sqrt(-self.manual_y)
             if agent.standby_position[1] > agent.y_boundaries[1] - ks:
                 agent.standby_position[1] = agent.y_boundaries[1] - ks
         agent.standby_position[2] = self.manual_z
         agent.standby_yaw = self.manual_yaw
 
         agent.csv_logger.writerow([agent.name, agent.timestamp,
-                                    agent.extpos.x, agent.extpos.y, agent.extpos.z, agent.yaw,
-                                    agent.velocity[0], agent.velocity[1], agent.velocity[2],
-                                    agent.standby_position[0], agent.standby_position[1],
-                                    agent.standby_position[2], agent.standby_yaw,
-                                    'None', 'None', 'None', 'None'])
+                                   agent.extpos.x, agent.extpos.y, agent.extpos.z, agent.yaw,
+                                   agent.velocity[0], agent.velocity[1], agent.velocity[2],
+                                   agent.standby_position[0], agent.standby_position[1],
+                                   agent.standby_position[2], agent.standby_yaw,
+                                   'None', 'None', 'None', 'None'])
 
         agent.cf.commander.send_position_setpoint(agent.standby_position[0], agent.standby_position[1],
                                                   agent.standby_position[2], agent.standby_yaw)
@@ -165,8 +165,8 @@ class SwarmObject:
             agent.circle_t = agent.circle_t + agent.delta_t
             agent.cf.commander.send_setpoint(roll, pitch, yaw, thrust)
         except Exception as e:
-            print(' -- Warning -- Error |', e,  '| detected in uav_control_law.circle() function,'
-                  ' switching to Standby state')
+            print(' -- Warning -- Error |', e, '| detected in uav_control_law.circle() function,'
+                                               ' switching to Standby state')
             agent.standby()
 
     @staticmethod
@@ -176,8 +176,8 @@ class SwarmObject:
             agent.circle_t = agent.circle_t + agent.delta_t
             agent.cf.commander.send_setpoint(roll, pitch, yaw, thrust)
         except Exception as e:
-            print(' -- Warning -- Error |', e,  '| detected in uav_control_law.circle_tangent_x_axis() function,'
-                  ' switching to Standby state')
+            print(' -- Warning -- Error |', e, '| detected in uav_control_law.circle_tangent_x_axis() function,'
+                                               ' switching to Standby state')
             agent.standby()
 
     def point_of_interest(self, agent: Agent):
@@ -186,18 +186,18 @@ class SwarmObject:
             agent.circle_t = agent.circle_t + agent.delta_t
             agent.cf.commander.send_setpoint(roll, pitch, yaw, thrust)
         except Exception as e:
-            print(' -- Warning -- Error |', e,  '| detected in uav_control_law.point_of_interest() function,'
-                  ' switching to Standby state')
+            print(' -- Warning -- Error |', e, '| detected in uav_control_law.point_of_interest() function,'
+                                               ' switching to Standby state')
             agent.standby()
 
 
 def distance(position_1_xyz_list: List[float], position_2_xyz_list: List[float]):
-    d = np.sqrt((position_1_xyz_list[0] - position_2_xyz_list[0]) ** 2
-                + (position_1_xyz_list[1] - position_2_xyz_list[1]) ** 2
-                + (position_1_xyz_list[2] - position_2_xyz_list[2]) ** 2)
+    d = numpy.sqrt((position_1_xyz_list[0] - position_2_xyz_list[0]) ** 2
+                   + (position_1_xyz_list[1] - position_2_xyz_list[1]) ** 2
+                   + (position_1_xyz_list[2] - position_2_xyz_list[2]) ** 2)
     return d
 
 
 def vertical_distance(position_1_z: float, position_2_z: float):
-    vd = np.sqrt((position_1_z - position_2_z) ** 2)
+    vd = numpy.sqrt((position_1_z - position_2_z) ** 2)
     return vd

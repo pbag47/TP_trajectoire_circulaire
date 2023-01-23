@@ -1,10 +1,9 @@
 import asyncio
-import time
-
 import cflib.crtp
 import csv
 import pynput.keyboard
 import qtm_tools
+import time
 
 from agent_class import Agent
 from joystick_class import Joystick
