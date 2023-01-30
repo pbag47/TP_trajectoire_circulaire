@@ -29,51 +29,49 @@ def frame_acquisition(connection: QRTConnection):
     return headers, markers, timestamp
 
 
-def initial_uav_detection(agents: List[Agent],
-                          robots: List[Robot],
+def initial_uav_detection(agent: Agent,
+                          robot: Robot,
                           markers: List[RT3DMarkerPositionNoLabel],
                           timestamp: float):
     """
     Gathers each object (UAV or robot) with its corresponding QTM marker, based on the expected initial positions
     """
 
-    if len(agents) + len(robots) > len(markers):
-        print(' ---- Warning ---- : Too few detected makers than expected, flight disabled')
-        for agt in agents:
-            agt.stop()
-    elif len(agents) + len(robots) < len(markers):
+    if (robot and len(markers) > 2) or (not robot and len(markers) > 1):
+        print(' ---- Warning ---- : Too many detected makers than expected, flight disabled')
+        agent.stop()
+
+    if (robot and len(markers) < 2) or (not robot and len(markers) < 1):
         print(' ---- Warning ---- : Too many detected markers than expected, flight disabled')
-        for agt in agents:
-            agt.stop()
+        agent.stop()
 
-    # For each UAV, searches for the nearest marker around the expected initial position,
+    # Searches for the nearest marker around the expected UAV initial position,
     # updates the UAV position to match the marker,
-    # and removes the marker from the list, so that 2 UAVs cannot be located on the same marker
-    for agt in agents:
-        d = [distance_init_pos_to_marker(agt.initial_position,
-                                         [mk.x * 10 ** -3, mk.y * 10 ** -3, mk.z * 10 ** -3]) for mk in markers]
-        try:
-            min_d_index = d.index(min(d))
-            agt.update_extpos(markers.pop(min_d_index), timestamp)
-            print('UAV <', agt.name, '> found @', agt.extpos)
-            if d[min_d_index] > 0.5:
-                print(' ---- Warning ---- UAV <', agt.name, '> marker found too far from expected initial position')
-                print('                   High risk of marker mismatch -> Flight disabled')
-        except ValueError:
-            break
+    # and removes the marker from the list, so that 2 vehicles cannot be located on the same marker
+    d = [distance_init_pos_to_marker(agent.initial_position,
+                                     [mk.x * 10 ** -3, mk.y * 10 ** -3, mk.z * 10 ** -3]) for mk in markers]
+    try:
+        min_d_index = d.index(min(d))
+        agent.update_extpos(markers.pop(min_d_index), timestamp)
+        print('UAV <', agent.name, '> found @', agent.extpos)
+        if d[min_d_index] > 0.5:
+            print(' ---- Warning ---- UAV <', agent.name, '> marker found too far from expected initial position')
+            print('                   High risk of marker mismatch -> Flight disabled')
+            agent.stop()
+    except ValueError as e:
+        print('initial_uav_detection / UAV localization error :', e)
 
-    # For each robot, searches for the nearest marker around the expected initial position,
+    # Searches for the nearest marker around the expected robot initial position,
     # updates the robot position to match the marker,
     # and removes the marker from the list
-    for rbt in robots:
-        d = [distance_init_pos_to_marker(rbt.initial_position,
-                                         [mk.x * 10 ** -3, mk.y * 10 ** -3, mk.z * 10 ** -3]) for mk in markers]
-        try:
-            min_d_index = d.index(min(d))
-            rbt.update_extpos(markers.pop(min_d_index), timestamp)
-            print('Robot <', rbt.name, '> found @', rbt.extpos)
-        except ValueError:
-            break
+    d = [distance_init_pos_to_marker(robot.initial_position,
+                                     [mk.x * 10 ** -3, mk.y * 10 ** -3, mk.z * 10 ** -3]) for mk in markers]
+    try:
+        min_d_index = d.index(min(d))
+        robot.update_extpos(markers.pop(min_d_index), timestamp)
+        print('Robot <', robot.name, '> found @', robot.extpos)
+    except ValueError as e:
+        print('initial_uav_detection / robot localization error :', e)
 
 
 def uav_tracking(agents: List[Agent],

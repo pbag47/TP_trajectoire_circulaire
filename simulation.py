@@ -104,9 +104,9 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
     def init_ui(self):
         self.close_button.clicked.connect(self.stop_button_callback)
         self.yaw_up.clicked.connect(self.yaw_up_callback)
-        self.yaw_up.setEnabled(False)
+        self.yaw_up.setEnabled(True)
         self.yaw_down.clicked.connect(self.yaw_down_callback)
-        self.yaw_down.setEnabled(False)
+        self.yaw_down.setEnabled(True)
 
         self.pause.clicked.connect(self.pause_button_callback)
         self.step.clicked.connect(self.step_button_callback)
@@ -155,7 +155,6 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
         self.close()
 
     def yaw_up_callback(self):
-        print('Yaw up, psi_init =', self.psi)
         self.psi = self.psi + 10        # (°)
         if self.psi > 180:
             self.psi = self.psi - 360

@@ -1,12 +1,16 @@
 import asyncio
+import cf_info
 import cflib.crtp
 import csv
 import pynput.keyboard
+import qasync
 import qtm_tools
+import sys
 import time
 
-from agent_class import Agent
 from joystick_class import Joystick
+from main_ui import Window
+from PyQt5.QtWidgets import QApplication
 from qtm import QRTConnection
 from qtm.packet import QRTPacket
 from robot_class import Robot
@@ -41,11 +45,16 @@ def detect_keyboard_input():
     return queue
 
 
-async def start_qtm_streaming(connection: QRTConnection):
+async def start_qtm_streaming(connection: QRTConnection, callback):
     """ Starts a QTM stream, and assigns a callback method to run each time a QRTPacket is received from QTM
      This method is made to run forever in an asyncio event loop """
     print('QTM streaming started')
-    await connection.stream_frames(components=['3dnolabels'], on_packet=packet_reception_callback)
+    await connection.stream_frames(components=['3dnolabels'], on_packet=callback)
+
+
+async def stop_qtm_streaming(connection: QRTConnection):
+    await connection.stream_frames_stop()
+    print('QTM streaming stopped')
 
 
 def packet_reception_callback(packet: QRTPacket):
@@ -70,6 +79,37 @@ def main():
     global SWARM_MANAGER
     global RUN_TRACKER
 
+    # -- Flight parameters ------------------------------------------------------- #
+    qtm_ip_address: str = '192.168.0.1'
+    agents_list = cf_info.init_agents()
+    rbt = Robot('Cible')
+
+    # -- User interface setup ---------------------------------------------------- #
+    app_test = QApplication(sys.argv)
+    user_window = Window(uavs=agents_list, robot=rbt, parameters_filename='flight_parameters.txt')
+
+    # -- Asyncio loop setup ------------------------------------------------------ #
+    q_loop = qasync.QEventLoop(app_test)
+    asyncio.set_event_loop(q_loop)
+
+    # -- QTM connection ---------------------------------------------------------- #
+    qtm_connection: QRTConnection = asyncio.get_event_loop().run_until_complete(
+        qtm_tools.connect_to_qtm(qtm_ip_address))
+
+    # -- Asyncio loop run (user interface + QTM streaming) ----------------------- #
+    if not qtm_connection:
+        print(' ---- Warning ---- QTM not connected, displaying UI in settings-only mode')
+        q_loop.run_forever()
+        return
+
+    asyncio.ensure_future(start_qtm_streaming(qtm_connection, user_window.update_graph))
+    q_loop.run_forever()
+    asyncio.get_event_loop().run_until_complete(stop_qtm_streaming(qtm_connection))
+
+    # -- Vehicle objects retrieval --------------------------------------------------- #
+    uav = user_window.uav
+    target = user_window.robot
+
     # -- Logs initialization ----------------------------------------------------- #
     file = open('logs.csv', 'w')
     writer = csv.writer(file)
@@ -79,37 +119,15 @@ def main():
                      'x_g (m)', 'y_g (m)', 'z_g (m)', 'yaw_g (°)',
                      'roll_c (°)', 'pitch_c (°)', 'yaw_rate_c (°/s)', 'thrust_c (PWM)'])
 
-    # -- Crazyflie radio identifiers database ------------------------------------ #
-    cf_radio_id = {'01': 'radio://0/81/2M/E7E7E7E701',
-                   '02': 'radio://0/82/2M/E7E7E7E702',
-                   '03': 'radio://0/83/2M/E7E7E7E703',
-                   '04': 'radio://0/84/2M/E7E7E7E704',
-                   '05': 'radio://0/85/2M/E7E7E7E705',
-                   '06': 'radio://0/86/2M/E7E7E7E706',
-                   '07': 'radio://0/87/2M/E7E7E7E707',
-                   '08': 'radio://0/88/2M/E7E7E7E708',
-                   '09': 'radio://0/89/2M/E7E7E7E709',
-                   '10': 'radio://0/90/2M/E7E7E7E710'}
-
     # -- Flight parameters ------------------------------------------------------- #
-    qtm_ip_address: str = '192.168.0.1'
-    uav = Agent('Crazyflie', cf_radio_id['01'])
-    uav.set_initial_position([1.0, 1.0, 0.0])
-    uav.set_takeoff_height(0.4)
     uav.csv_logger = writer
+    if target:
+        target.csv_logger = writer
 
-    target = Robot('Cible')
-    target.set_initial_position([0.0, 0.0, 0.0])
-    target.csv_logger = writer
-
-    # -- QTM connection and initial frame acquisition ---------------------------- #
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    qtm_connection: QRTConnection = loop.run_until_complete(
-        qtm_tools.connect_to_qtm(qtm_ip_address))
+    # -- Initial frame acquisition ---------------------------- #
     header, markers, timestamp = qtm_tools.frame_acquisition(qtm_connection)
     print(header.marker_count, 'markers found by QTM during initialization')
-    qtm_tools.initial_uav_detection([uav], [target], markers, timestamp)
+    qtm_tools.initial_uav_detection(uav, target, markers, timestamp)
 
     # -- Crazyflie connection and swarm initialization procedure ----------------- #
     cflib.crtp.init_drivers()
@@ -122,19 +140,20 @@ def main():
     uav.start_attitude_logs()
     SWARM_MANAGER.add_agent(uav)
     SWARM_MANAGER.manual_flight_agents_list.append(uav.name)
-    SWARM_MANAGER.robot_list = [target]
+    if target:
+        SWARM_MANAGER.robot_list = [target]
 
     # -- Real-time stream start -------------------------------------------------- #
     RUN_TRACKER = True
-    asyncio.ensure_future(start_qtm_streaming(qtm_connection), loop=loop)
-    asyncio.ensure_future(keyboard_handler(), loop=loop)
-    loop.run_forever()
+    asyncio.ensure_future(start_qtm_streaming(qtm_connection, packet_reception_callback))
+    asyncio.ensure_future(keyboard_handler())
+    asyncio.get_event_loop().run_forever()
 
     # -- Disconnects the Crazyflies, stops the QTM stream and disconnects QTM ---- #
     uav.stop()
     uav.cf.close_link()
 
-    loop.run_until_complete(qtm_tools.disconnect_qtm(qtm_connection))
+    asyncio.get_event_loop().run_until_complete(qtm_tools.disconnect_qtm(qtm_connection))
     file.close()
 
 
