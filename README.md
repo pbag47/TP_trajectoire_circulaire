@@ -163,7 +163,7 @@ En revanche, Flight_logs_dashboard.ipynb, qui sert à tracer les enregistrements
 Ce projet est livré avec un fichier "requirements.txt" contenant le nom de toutes les librairies nécessaires.
 - A l'aide d'un terminal de commande, se placer dans le dossier source du projet "TP_trajectoire_circulaire" installé sur le PC (commandes ```ls``` et ```cd```)
 - Activer l'environnement virtuel du projet :
-  + (venv) ~/PycharmProjects/TP_trajectoire_circulaire$ ```source venv/bin/activate```
+  + ~/PycharmProjects/TP_trajectoire_circulaire$ ```source venv/bin/activate```
 - Installer toutes les libraries listées dans le fichier "requirements.txt" en respectant les versions spécifiées :
   + (venv) ~/PycharmProjects/TP_trajectoire_circulaire$ ```python3 -m pip install -r requirements.txt```
 - Quitter l'environnement virtuel :
