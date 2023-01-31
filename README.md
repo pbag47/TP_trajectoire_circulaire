@@ -28,7 +28,7 @@ En revanche, le gestionnaire de paquets pip n'est pas installé par défaut.
 - Installer pip pour Python3 :
   + ~$ ```sudo apt install python3-pip```
 
-Pour séparer les projets Python dans des environnements distancts (et afin d'éviter les problèmes de compatibilité entre les librairies utilisées par différents projets),
+Pour séparer les projets Python dans des environnements distincts (et afin d'éviter les problèmes de compatibilité entre les librairies utilisées par différents projets),
 il est préférable d'isoler chaque projet dans un environnement virtuel qui contient uniquement les librairies Python nécessaires au projet.
 Le module "venv" permet de créer et gérer les environnements virtuels.
 - Installer venv :
