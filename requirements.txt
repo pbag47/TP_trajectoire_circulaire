@@ -1,8 +1,8 @@
 cflib==0.1.21
 qtm==2.0.6
 numpy==1.24.1
+pyjoystick==1.2.4
 pynput==1.7.6
 PyQt5==5.15.7
 PythonQwt==0.10.2
 qasync==0.23.0
-pywinusb==0.4.2
