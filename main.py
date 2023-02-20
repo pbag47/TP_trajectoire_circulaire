@@ -8,7 +8,7 @@ import qtm_tools
 import sys
 import time
 
-from joystick_class import Joystick
+from joystick_class import UserInputManager
 from main_ui import Window
 from PyQt5.QtWidgets import QApplication
 from qtm import QRTConnection
@@ -132,19 +132,21 @@ def main():
     # -- Crazyflie connection and swarm initialization procedure ----------------- #
     cflib.crtp.init_drivers()
     SWARM_MANAGER = SwarmObject()
-    _ = Joystick(SWARM_MANAGER)
+
+    # -- Real-time stream start -------------------------------------------------- #
+    RUN_TRACKER = True
+    _ = UserInputManager(SWARM_MANAGER)
 
     uav.connect_cf()
-    time.sleep(2)
-    uav.setup_parameters()
-    uav.start_attitude_logs()
+    time.sleep(5)
+    if uav.enabled:
+        uav.setup_parameters()
+        uav.start_attitude_logs()
     SWARM_MANAGER.add_agent(uav)
     SWARM_MANAGER.manual_flight_agents_list.append(uav.name)
     if target:
         SWARM_MANAGER.robot_list = [target]
 
-    # -- Real-time stream start -------------------------------------------------- #
-    RUN_TRACKER = True
     asyncio.ensure_future(start_qtm_streaming(qtm_connection, packet_reception_callback))
     asyncio.ensure_future(keyboard_handler())
     asyncio.get_event_loop().run_forever()

@@ -1,5 +1,8 @@
+# from typing import List
+
+
 def joystick_map(device_name: str):
-    mode = 1
+    mode = 2
     if device_name == '5-Axis,12-Button with POV ':
         axis_names = {
             0x00: 'roll',
@@ -51,28 +54,26 @@ def joystick_map(device_name: str):
 
     elif device_name == 'Microsoft X-Box One S pad' and mode == 1:
         axis_names = {
-            0x00: 'roll',
-            0x01: 'pitch',
-            0x02: 'yaw-',
-            0x03: 'yaw',
-            0x04: 'height2',
-            0x05: 'yaw+',
-            0x10: 'hat0x',
-            0x11: 'hat0y',
+            0: 'roll',
+            1: 'pitch',
+            2: 'yaw-',
+            3: 'yaw',
+            4: 'height2',
+            5: 'yaw+',
         }
 
         button_names = {
-            0x130: 'Takeoff / Land',  # a
-            0x131: 'Point of interest',  # b
-            0x133: 'Circle',  # x
-            0x134: 'Circle with tangent x axis',  # y
-            0x136: 'Standby',  # lx
-            0x137: 'Manual flight',  # rx
-            0x13a: 'select',  # select
-            0x13b: 'Stop',  # start
-            0x13c: 'mode',  # mode
-            0x13d: 'thumb_left',  # thumb left
-            0x13e: 'thumb_right',  # thumb right
+            0: 'Takeoff / Land',  # a
+            1: 'Point of interest',  # b
+            2: 'Circle',  # x
+            3: 'Circle with tangent x axis',  # y
+            4: 'Standby',  # lx
+            5: 'Manual flight',  # rx
+            6: 'select',  # select
+            7: 'Stop',  # start
+            8: 'thumb_left',  # thumb left
+            9: 'thumb_right',  # thumb right
+            # 0x13c: 'mode',  # mode
         }
 
     elif device_name == 'Microsoft X-Box One S pad' and mode == 2:
@@ -88,17 +89,17 @@ def joystick_map(device_name: str):
         }
 
         button_names = {
-            0x130: 'Takeoff / Land',  # a
-            0x131: 'Point of interest',  # b
-            0x133: 'Circle',  # x
-            0x134: 'Circle with tangent x axis',  # y
-            0x136: 'Standby',  # lx
-            0x137: 'Manual flight',  # rx
-            0x13a: 'select',  # select
-            0x13b: 'Stop',  # start
-            0x13c: 'mode',  # mode
-            0x13d: 'thumb_left',  # thumb left
-            0x13e: 'thumb_right',  # thumb right
+            0: 'Takeoff / Land',  # a
+            1: 'Point of interest',  # b
+            2: 'Circle',  # x
+            3: 'Circle with tangent x axis',  # y
+            4: 'Standby',  # lx
+            5: 'Manual flight',  # rx
+            6: 'select',  # select
+            7: 'Stop',  # start
+            8: 'thumb_left',  # thumb left
+            9: 'thumb_right',  # thumb right
+            # 0x13c: 'mode',  # mode
         }
 
     else:

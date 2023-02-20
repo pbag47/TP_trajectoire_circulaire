@@ -1,193 +1,119 @@
-import array
-import joystick_map
-import os
-import struct
-
-from fcntl import ioctl
+from joystick_map import joystick_map
+from pyjoystick.sdl2 import Key, Joystick, JoystickEventLoop
 from swarm_object_class import SwarmObject
 from threading import Thread
 from typing import Union
 
 
-class Joystick:
+class UserInputManager:
     def __init__(self, swarm_object: Union[SwarmObject, None] = None):
         self.swarm = swarm_object
         self.stopped = False
+        self.button_names, self.axis_names = joystick_map('Microsoft X-Box One S pad')
+        self.joystick_event_loop = JoystickEventLoop(self.device_added, self.device_removed, self.key_received)
+        self.thread = Thread(target=self.start_ui_thread)
+        self.thread.start()
 
-        print('Joystick initialization:')
-        print('    Available devices:', [('/dev/input/%s' % fn)
-                                         for fn in os.listdir('/dev/input') if fn.startswith('js')])
+    def start_ui_thread(self):
+        self.joystick_event_loop.run()
 
-        # Buttons and axes states initialization
-        self.axis_states = {}
-        self.button_states = {}
+    @staticmethod
+    def device_added(joystick: Joystick):
+        print('Gamepad "', joystick.name,
+              '" detected with', joystick.get_numaxes(), 'axes and',
+              joystick.get_numbuttons(), 'buttons')
 
-        self.axis_map = []
-        self.button_map = []
+    @staticmethod
+    def device_removed(joystick):
+        print(joystick, 'removed')
 
-        # Opens the Joystick device
-        self.fn = '/dev/input/js0'
-        print('    Opening %s:' % self.fn)
-        self.js_device = open(self.fn, 'rb')
+    def key_received(self, key: Key):
+        if key.keytype == Key.AXIS:
+            axis = self.axis_names[key.number]
+            if axis == 'pitch':
+                if -0.01 < key.value < 0.01:
+                    self.swarm.manual_x = 0.0
+                else:
+                    self.swarm.manual_x = key.value ** 3
 
-        # Gets the device name
-        buf = array.array('B', [0] * 64)
-        ioctl(self.js_device, 0x80006a13 + (0x10000 * len(buf)), buf)
-        self.js_name = buf.tobytes().rstrip(b'\x00').decode('utf-8')
-        print('        Device name: %s' % self.js_name)
+            if axis == 'roll':
+                if -0.01 < key.value < 0.01:
+                    self.swarm.manual_y = 0.0
+                else:
+                    self.swarm.manual_y = key.value ** 3
 
-        # Gets the number of axes and buttons
-        buf = array.array('B', [0])
-        ioctl(self.js_device, 0x80016a11, buf)
-        self.num_axes = buf[0]
+            if axis == 'yaw':
+                self.swarm.manual_yaw = self.swarm.manual_yaw - 2 * key.value ** 3
 
-        buf = array.array('B', [0])
-        ioctl(self.js_device, 0x80016a12, buf)
-        self.num_buttons = buf[0]
+            if axis == 'yaw-':
+                fvalue = (1 + key.value) / 2
+                self.swarm.manual_yaw = self.swarm.manual_yaw + 2 * fvalue ** 3
 
-        # Gets the buttons and axes names from the corresponding Joystick map data
-        self.button_names, self.axis_names = joystick_map.joystick_map(self.js_name)
+            if axis == 'yaw+':
+                fvalue = (1 + key.value) / 2
+                self.swarm.manual_yaw = self.swarm.manual_yaw - 2 * fvalue ** 3
 
-        # Get the axis map.
-        buf = array.array('B', [0] * 0x40)
-        ioctl(self.js_device, 0x80406a32, buf)
-        for axis in buf[:self.num_axes]:
-            axis_name = self.axis_names.get(axis, 'unknown(0x%02x)' % axis)
-            self.axis_map.append(axis_name)
-            self.axis_states[axis_name] = 0.0
+            if axis == 'height':
+                self.swarm.manual_z = (1 - key.value) / 2
 
-        # Get the button map.
-        buf = array.array('H', [0] * 200)
-        ioctl(self.js_device, 0x80406a34, buf)
-        for btn in buf[:self.num_buttons]:
-            btn_name = self.button_names.get(btn, 'unknown(0x%03x)' % btn)
-            self.button_map.append(btn_name)
-            self.button_states[btn_name] = 0.0
+            if axis == 'height2':
+                self.swarm.manual_z = self.swarm.manual_z - 0.01 * key.value
 
-        print('        %d axes found: %s' % (self.num_axes, ', '.join(self.axis_map)))
-        print('        %d buttons found: %s' % (self.num_buttons, ', '.join(self.button_map)))
+        if key.keytype == Key.BUTTON and key.value:
+            button = self.button_names[key.number]
+            if button == 'Stop':
+                print('Stop button triggered, joystick disconnected')
+                if self.swarm:
+                    for agt in self.swarm.swarm_agent_list:
+                        agt.cf.commander.send_stop_setpoint()
+                        agt.stop()
+                self.stopped = True
+                self.joystick_event_loop.stop()
 
-        if self.swarm is not None:
-            self.jsl = Thread(target=self.joystick_inputs)
-            self.jsl.start()
+            if button == 'Takeoff / Land':
+                for agt in self.swarm.swarm_agent_list:
+                    if agt.enabled and not agt.is_flying:
+                        agt.takeoff()
+                    elif agt.enabled and agt.is_flying:
+                        agt.land()
 
-    def joystick_inputs(self):
-        while not self.stopped:
-            ev_buf = self.js_device.read(8)
-            time, value, buf_type, number = struct.unpack('IhBB', ev_buf)
+            if button == 'Standby':
+                for agt in self.swarm.swarm_agent_list:
+                    if agt.enabled and agt.is_flying:
+                        agt.standby()
 
-            if buf_type & 0x01:
-                button = self.button_map[number]
-                if button:
-                    self.buttons(button, value)
+            if button == 'Manual flight':
+                for agt in self.swarm.swarm_agent_list:
+                    if agt.enabled and agt.is_flying and any([agt.name == manual for manual in
+                                                              self.swarm.manual_flight_agents_list]):
+                        self.swarm.manual_z = agt.extpos.z
+                        agt.manual_flight()
 
-            if buf_type & 0x02:
-                axis = self.axis_map[number]
-                if axis:
-                    self.axis(axis, value)
+            if button == 'Circle':
+                for agt in self.swarm.swarm_agent_list:
+                    if agt.enabled and agt.is_flying:
+                        agt.circle()
 
-    def buttons(self, button, value):
-        if button == 'Stop' and value:
-            print('Stop button triggered, joystick disconnected')
-            for agt in self.swarm.swarm_agent_list:
-                agt.cf.commander.send_stop_setpoint()
-                agt.stop()
-            self.stopped = True
+            if button == 'Circle with tangent x axis':
+                for agt in self.swarm.swarm_agent_list:
+                    if agt.enabled and agt.is_flying:
+                        agt.circle_with_tangent_x_axis()
 
-        if button == 'Takeoff / Land' and value:
-            for agt in self.swarm.swarm_agent_list:
-                if agt.enabled and not agt.is_flying:
-                    agt.takeoff()
-                elif agt.enabled and agt.is_flying:
-                    agt.land()
+            if button == 'Point of interest':
+                for agt in self.swarm.swarm_agent_list:
+                    if agt.enabled and agt.is_flying:
+                        agt.point_of_interest()
 
-        if button == 'Standby' and value:
-            for agt in self.swarm.swarm_agent_list:
-                if agt.enabled and agt.is_flying:
-                    agt.standby()
+            if button == 'Yaw-':
+                self.swarm.manual_yaw = self.swarm.manual_yaw + 22.5
 
-        if button == 'Manual flight' and value:
-            for agt in self.swarm.swarm_agent_list:
-                if agt.enabled and agt.is_flying and any([agt.name == manual for manual in
-                                                          self.swarm.manual_flight_agents_list]):
-                    self.swarm.manual_z = agt.extpos.z
-                    agt.manual_flight()
-
-        if button == 'Circle' and value:
-            for agt in self.swarm.swarm_agent_list:
-                if agt.enabled and agt.is_flying:
-                    agt.circle()
-
-        if button == 'Circle with tangent x axis' and value:
-            for agt in self.swarm.swarm_agent_list:
-                if agt.enabled and agt.is_flying:
-                    agt.circle_with_tangent_x_axis()
-
-        if button == 'Point of interest' and value:
-            for agt in self.swarm.swarm_agent_list:
-                if agt.enabled and agt.is_flying:
-                    agt.point_of_interest()
-
-        if button == 'Yaw-' and value:
-            self.swarm.manual_yaw = self.swarm.manual_yaw + 22.5
-
-        if button == 'Yaw+' and value:
-            self.swarm.manual_yaw = self.swarm.manual_yaw - 22.5
-
-    def axis(self, axis, value):
-        fvalue = value / 32767.0
-
-        if axis == 'pitch':
-            if -0.01 < fvalue < 0.01:
-                self.swarm.manual_x = 0.0
-            else:
-                self.swarm.manual_x = fvalue ** 3
-
-        if axis == 'roll':
-            if -0.01 < fvalue < 0.01:
-                self.swarm.manual_y = 0.0
-            else:
-                self.swarm.manual_y = fvalue ** 3
-
-        if axis == 'yaw':
-            self.swarm.manual_yaw = self.swarm.manual_yaw - 2 * fvalue ** 3
-
-        if axis == 'yaw-':
-            fvalue = (1 + fvalue) / 2
-            self.swarm.manual_yaw = self.swarm.manual_yaw + 2 * fvalue ** 3
-
-        if axis == 'yaw+':
-            fvalue = (1 + fvalue) / 2
-            self.swarm.manual_yaw = self.swarm.manual_yaw - 2 * fvalue ** 3
-
-        if axis == 'height':
-            self.swarm.manual_z = 1 - fvalue
-
-        if axis == 'height2':
-            self.swarm.manual_z = self.swarm.manual_z - 0.01 * fvalue
-
-    def print_inputs(self):
-        """
-        Test method that prints any input received from the Joystick
-        """
-        while True:
-            ev_buf = self.js_device.read(8)
-            time, value, buf_type, number = struct.unpack('IhBB', ev_buf)
-
-            if buf_type & 0x01:
-                button = self.button_map[number]
-                if button:
-                    print([button, value])
-
-            if buf_type & 0x02:
-                axis = self.axis_map[number]
-                if axis:
-                    print([axis, value])
+            if button == 'Yaw+':
+                self.swarm.manual_yaw = self.swarm.manual_yaw - 22.5
 
 
 def test_joystick_input():
-    js = Joystick()
-    js.print_inputs()
+    swarm = SwarmObject()
+    _ = UserInputManager(swarm)
 
 
 if __name__ == '__main__':

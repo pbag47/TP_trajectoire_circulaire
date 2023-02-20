@@ -61,17 +61,18 @@ def initial_uav_detection(agent: Agent,
     except ValueError as e:
         print('initial_uav_detection / UAV localization error :', e)
 
-    # Searches for the nearest marker around the expected robot initial position,
-    # updates the robot position to match the marker,
-    # and removes the marker from the list
-    d = [distance_init_pos_to_marker(robot.initial_position,
-                                     [mk.x * 10 ** -3, mk.y * 10 ** -3, mk.z * 10 ** -3]) for mk in markers]
-    try:
-        min_d_index = d.index(min(d))
-        robot.update_extpos(markers.pop(min_d_index), timestamp)
-        print('Robot <', robot.name, '> found @', robot.extpos)
-    except ValueError as e:
-        print('initial_uav_detection / robot localization error :', e)
+    if robot:
+        # Searches for the nearest marker around the expected robot initial position,
+        # updates the robot position to match the marker,
+        # and removes the marker from the list
+        d = [distance_init_pos_to_marker(robot.initial_position,
+                                         [mk.x * 10 ** -3, mk.y * 10 ** -3, mk.z * 10 ** -3]) for mk in markers]
+        try:
+            min_d_index = d.index(min(d))
+            robot.update_extpos(markers.pop(min_d_index), timestamp)
+            print('Robot <', robot.name, '> found @', robot.extpos)
+        except ValueError as e:
+            print('initial_uav_detection / robot localization error :', e)
 
 
 def uav_tracking(agents: List[Agent],
