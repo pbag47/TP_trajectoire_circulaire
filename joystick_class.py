@@ -8,7 +8,6 @@ from typing import Union
 class UserInputManager:
     def __init__(self, swarm_object: Union[SwarmObject, None] = None):
         self.swarm = swarm_object
-        self.stopped = False
         self.button_names, self.axis_names = joystick_map('Microsoft X-Box One S pad')
         self.joystick_event_loop = JoystickEventLoop(self.device_added, self.device_removed, self.key_received)
         self.thread = Thread(target=self.start_ui_thread)
@@ -67,7 +66,6 @@ class UserInputManager:
                     for agt in self.swarm.swarm_agent_list:
                         agt.cf.commander.send_stop_setpoint()
                         agt.stop()
-                self.stopped = True
                 self.joystick_event_loop.stop()
 
             if button == 'Takeoff / Land':

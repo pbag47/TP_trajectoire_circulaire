@@ -78,14 +78,12 @@ def joystick_map(device_name: str):
 
     elif device_name == 'Microsoft X-Box One S pad' and mode == 2:
         axis_names = {
-            0x00: 'yaw',
-            0x01: 'height2',
-            0x02: 'yaw-',
-            0x03: 'roll',
-            0x04: 'pitch',
-            0x05: 'yaw+',
-            0x10: 'hat0x',
-            0x11: 'hat0y',
+            0: 'yaw',
+            1: 'height2',
+            2: 'yaw-',
+            3: 'roll',
+            4: 'pitch',
+            5: 'yaw+',
         }
 
         button_names = {
