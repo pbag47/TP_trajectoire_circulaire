@@ -1,6 +1,3 @@
-# from typing import List
-
-
 def joystick_map(device_name: str):
     mode = 2
     if device_name == '5-Axis,12-Button with POV ':

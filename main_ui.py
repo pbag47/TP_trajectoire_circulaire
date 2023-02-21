@@ -23,6 +23,8 @@ class GraphicRepresentation:
             color = QPen(QtCore.Qt.black)
         elif self.type == 'Robot':
             color = QPen(QtCore.Qt.red)
+        else:
+            color = QPen(QtCore.Qt.blue)
 
         self.marker = None
         self.marker_gr = QwtPlotMarker(self.name)
