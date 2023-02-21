@@ -69,5 +69,8 @@ Ce projet est livré avec un fichier "requirements.txt" contenant le nom de tout
 ___
 
 Les installations sont alors terminées et tous les programmes Python du projet peuvent être exécutés à partir de PyCharm.
+JupyterLab peut être démarré à partir de l'invité de commande avec la commande suivante :
+  + C:\Users\ [nom d'utilisateur] > ```jupyter-lab```
+
 Ouvrir le Notebook "Documentation.ipynb" avec JupyterLab pour obtenir des informations supplémentaires et avoir accès au mode d'emploi.
 
