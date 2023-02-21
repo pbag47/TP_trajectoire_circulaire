@@ -1,4 +1,4 @@
-# TP_trajectoire_circulaire
+# TP_trajectoire_circulaire - Branche "master" de développement sous Linux
 ___
 
 TP_trajectoire_circulaire est un projet Python destiné à l'enseignement du module d'automatique à des étudiants en école d'ingénieur.
