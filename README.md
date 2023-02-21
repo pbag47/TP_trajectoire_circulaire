@@ -8,11 +8,13 @@ l'attitude du drone selon un objectif de position à atteindre.
 Ce fichier détaille la configuration et l'installation des différents modules sur un PC équipé d'un système d'exploitation Windows 10 et d'une connexion Internet fiable.
 
 ## 1. Pré-requis
-Ce projet a été développé en Python 3.10 avec le logiciel Pycharm Community Edition sur une machine Ubuntu 22.04 "Jammy Jellyfish" LTS (branche "master"). Cette branche permet le déploiement de ce projet sur une machine Windows.
+Ce projet a été développé en Python 3.10 avec le logiciel Pycharm Community Edition sur une machine Ubuntu 22.04 "Jammy Jellyfish" LTS (branche "master").
+
+La branche courante ("Windows") permet le déploiement d'une version réadaptée de ce projet compatible avec une machine Windows 10.
 
 ### 1.1. Installation et configuration de Python
 - Installer Python 3.10 et son gestionnaire de paquets "pip"  partir du site officiel de Python.
-- Ouvrir un nouvel invité de commande et mettre à jour pip :
+- Ouvrir un terminal de commande et mettre à jour pip :
   + C:\Users\ [nom d'utilisateur] > ```pip install --upgrade pip```
 
 ### 1.2. Instalation de PyCharm
