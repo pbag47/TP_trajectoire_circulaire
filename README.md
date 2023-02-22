@@ -65,7 +65,7 @@ En revanche, Flight_logs_dashboard.ipynb, qui sert à tracer les enregistrements
 Ce projet est livré avec un fichier "requirements.txt" contenant le nom de toutes les librairies nécessaires. Les fonctions intégrées de PyCharm permettent d'interpréter ce fichier et d'installer automatiquement ces librairies dans l'environnement virtuel Python dédié au projet (à condition que le PC soit connecté à Internet).
 - Ouvrir le fichier "requirements.txt" sur Pycharm.
 - Repérer la notification qui indique que des packages sont manquants.
-- Cliquer sur "Install Packages".
+- Cliquer sur "Install requirements".
 - Attendre la fin de l'installation
 
 ___
