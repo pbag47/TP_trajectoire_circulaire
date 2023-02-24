@@ -2,16 +2,16 @@ from agent_class import Agent
 
 
 def init_agents():
-    cf_radio_id = {'01': 'radio://0/81/2M/E7E7E7E701',
-                   '02': 'radio://1/82/2M/E7E7E7E702',
-                   '03': 'radio://2/83/2M/E7E7E7E703',
-                   '04': 'radio://3/84/2M/E7E7E7E704',
-                   '05': 'radio://0/85/2M/E7E7E7E705',
-                   '06': 'radio://1/86/2M/E7E7E7E706',
-                   '07': 'radio://2/87/2M/E7E7E7E707',
-                   '08': 'radio://3/88/2M/E7E7E7E708',
-                   '09': 'radio://0/89/2M/E7E7E7E709',
-                   '10': 'radio://1/90/2M/E7E7E7E710'}
+    cf_radio_id = {'01': 'radio://0/90/2M/E7E7E7E701',
+                   '02': 'radio://0/90/2M/E7E7E7E702',
+                   '03': 'radio://0/90/2M/E7E7E7E703',
+                   '04': 'radio://0/95/2M/E7E7E7E704',
+                   '05': 'radio://0/95/2M/E7E7E7E705',
+                   '06': 'radio://0/100/2M/E7E7E7E706',
+                   '07': 'radio://0/100/2M/E7E7E7E707',
+                   '08': 'radio://0/100/2M/E7E7E7E708',
+                   '09': 'radio://0/105/2M/E7E7E7E709',
+                   '10': 'radio://0/105/2M/E7E7E7E710'}
 
     cf1 = Agent('cf1', cf_radio_id['01'])
     cf2 = Agent('cf2', cf_radio_id['02'])

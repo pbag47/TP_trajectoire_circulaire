@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import numpy
 import qtm
 
@@ -9,12 +10,15 @@ from robot_class import Robot
 from typing import List
 
 
+logger = logging.getLogger(__name__)
+
+
 async def connect_to_qtm(ip: str):
     connection: QRTConnection = await qtm.connect(ip)
     if connection is None:
-        print(' ---- Warning ---- Error during QTM connection @', ip)
+        logger.error('Error during QTM connection @ ' + ip)
     else:
-        print('QTM connected @', ip)
+        logger.info('QTM connected @ ' + ip)
     return connection
 
 
@@ -29,21 +33,24 @@ def frame_acquisition(connection: QRTConnection):
     return headers, markers, timestamp
 
 
-def initial_uav_detection(agent: Agent,
-                          robot: Robot,
-                          markers: List[RT3DMarkerPositionNoLabel],
-                          timestamp: float):
+def initial_detection(agent: Agent,
+                      robot: Robot,
+                      markers: List[RT3DMarkerPositionNoLabel],
+                      timestamp: float):
     """
-    Gathers each object (UAV or robot) with its corresponding QTM marker, based on the expected initial positions
+    Gathers each object (UAV or robot) with its corresponding QTM marker, based on the expected initial position
     """
 
-    if (robot and len(markers) > 2) or (not robot and len(markers) > 1):
-        print(' ---- Warning ---- : Too many detected makers than expected, flight disabled')
-        agent.stop()
-
-    if (robot and len(markers) < 2) or (not robot and len(markers) < 1):
-        print(' ---- Warning ---- : Too many detected markers than expected, flight disabled')
-        agent.stop()
+    if robot:
+        if len(markers) != 2:
+            logger.error('1 UAV + 1 Robot declared, ' + str(len(markers)) + ' markers found by QTM')
+            agent.stop()
+            raise ValueError('Expected 2 markers, but ' + str(len(markers)) + ' markers were received from QTM')
+    else:
+        if len(markers) != 1:
+            logger.error('1 UAV declared, ' + str(len(markers)) + ' markers found by QTM')
+            agent.stop()
+            raise ValueError('Expected 1 marker, but ' + str(len(markers)) + ' markers were received from QTM')
 
     # Searches for the nearest marker around the expected UAV initial position,
     # updates the UAV position to match the marker,
@@ -52,32 +59,38 @@ def initial_uav_detection(agent: Agent,
                                      [mk.x * 10 ** -3, mk.y * 10 ** -3, mk.z * 10 ** -3]) for mk in markers]
     try:
         min_d_index = d.index(min(d))
-        agent.update_extpos(markers.pop(min_d_index), timestamp)
-        print('UAV <', agent.name, '> found @', agent.extpos)
+        agent.update_position(markers.pop(min_d_index), timestamp)
+        logger.info(agent.name + ' found @ ' + str([round(agent.position.x, 2),
+                                                    round(agent.position.y, 2),
+                                                    round(agent.position.z, 2)]))
         if d[min_d_index] > 0.5:
-            print(' ---- Warning ---- UAV <', agent.name, '> marker found too far from expected initial position')
-            print('                   High risk of marker mismatch -> Flight disabled')
+            logger.error(agent.name + ' marker found too far from its expected initial position')
             agent.stop()
     except ValueError as e:
-        print('initial_uav_detection / UAV localization error :', e)
+        logger.error(agent.name + ' initial detection error')
+        raise e
 
-    # Searches for the nearest marker around the expected robot initial position,
-    # updates the robot position to match the marker,
-    # and removes the marker from the list
-    d = [distance_init_pos_to_marker(robot.initial_position,
-                                     [mk.x * 10 ** -3, mk.y * 10 ** -3, mk.z * 10 ** -3]) for mk in markers]
-    try:
-        min_d_index = d.index(min(d))
-        robot.update_extpos(markers.pop(min_d_index), timestamp)
-        print('Robot <', robot.name, '> found @', robot.extpos)
-    except ValueError as e:
-        print('initial_uav_detection / robot localization error :', e)
+    if robot:
+        # Searches for the nearest marker around the expected robot initial position,
+        # updates the robot position to match the marker,
+        # and removes the marker from the list
+        d = [distance_init_pos_to_marker(robot.initial_position,
+                                         [mk.x * 10 ** -3, mk.y * 10 ** -3, mk.z * 10 ** -3]) for mk in markers]
+        try:
+            min_d_index = d.index(min(d))
+            robot.update_position(markers.pop(min_d_index), timestamp)
+            logger.info(robot.name + ' found @ ' + str([round(robot.position.x, 2),
+                                                        round(robot.position.y, 2),
+                                                        round(robot.position.z, 2)]))
+        except ValueError as e:
+            logger.error(robot.name + ' initial detection error')
+            raise e
 
 
-def uav_tracking(agents: List[Agent],
-                 robots: List[Robot],
-                 markers: List[RT3DMarkerPositionNoLabel],
-                 timestamp: float):
+def tracking(agents: List[Agent],
+             robots: List[Robot],
+             markers: List[RT3DMarkerPositionNoLabel],
+             timestamp: float):
     """
     Gathers each object (UAV or robot) with its corresponding marker, based on its last known state.
     """
@@ -92,27 +105,27 @@ def uav_tracking(agents: List[Agent],
     # id-matching marker
     for rbt in robots:
         try:
-            index = markers_ids.index(rbt.extpos.id)
-            rbt.update_extpos(markers.pop(index), timestamp)
+            index = markers_ids.index(rbt.position.id)
+            rbt.update_position(markers.pop(index), timestamp)
             del markers_ids[index]
         except ValueError:
             rbt.invalid_6dof_count += 1
             if rbt.invalid_6dof_count == 1:
-                print('Warning : Robot <', rbt.name, '> lost')
+                logger.warning(rbt.name + ' lost')
 
     for agt in agents:
         if agt.setup_finished and agt.enabled:
             try:
-                index = markers_ids.index(agt.extpos.id)
-                agt.update_extpos(markers.pop(index), timestamp)
+                index = markers_ids.index(agt.position.id)
+                agt.update_position(markers.pop(index), timestamp)
                 agt.send_external_position()
                 del markers_ids[index]
             except ValueError:
                 agt.invalid_6dof_count += 1
                 if agt.invalid_6dof_count == 1:
-                    print('Warning : UAV <', agt.name, '> lost')
+                    logger.warning(agt.name + ' lost')
                 if agt.invalid_6dof_count == 10:
-                    print(' ---- Warning ---- UAV <', agt.name, '> off camera for too long, switching the engines off')
+                    logger.error(agt.name + ' off camera for too long, emergency stop triggered')
                     agt.stop()
 
     # If the QTM tracking fails but the UAV or robot is still seen by the cameras, a new marker id will be created.
@@ -120,26 +133,30 @@ def uav_tracking(agents: List[Agent],
     # known position
     for rbt in robots:
         if rbt.invalid_6dof_count > 0:
-            d = [_distance_between_markers(rbt.extpos, mk) for mk in markers]
+            d = [_distance_between_markers(rbt.position, mk) for mk in markers]
             try:
                 if min(d) < 0.1:
                     min_d_index = d.index(min(d))
-                    rbt.update_extpos(markers.pop(min_d_index), timestamp)
+                    rbt.update_position(markers.pop(min_d_index), timestamp)
                     rbt.invalid_6dof_count = 0
-                    print('Robot <', rbt.name, '> found @', rbt.extpos)
+                    logger.info(rbt.name + ' found @ ' + str([round(rbt.position.x, 2),
+                                                              round(rbt.position.y, 2),
+                                                              round(rbt.position.z, 2)]))
             except ValueError:
                 break
 
     for agt in agents:
         if agt.invalid_6dof_count > 0:
-            d = [_distance_between_markers(agt.extpos, mk) for mk in markers]
+            d = [_distance_between_markers(agt.position, mk) for mk in markers]
             try:
                 if min(d) < 0.1:
                     min_d_index = d.index(min(d))
-                    agt.update_extpos(markers.pop(min_d_index), timestamp)
+                    agt.update_position(markers.pop(min_d_index), timestamp)
                     agt.send_external_position()
                     agt.invalid_6dof_count = 0
-                    print('UAV <', agt.name, '> found @', agt.extpos)
+                    logger.info(agt.name + ' found @ ' + str([round(agt.position.x, 2),
+                                                              round(agt.position.y, 2),
+                                                              round(agt.position.z, 2)]))
             except ValueError:
                 break
 
@@ -172,9 +189,9 @@ async def disconnect_qtm(connection: QRTConnection):
     if connection is not None:
         await connection.stream_frames_stop()
         connection.disconnect()
-        print('QTM disconnected')
+        logger.info('QTM disconnected')
     else:
-        print('QTM connection already closed')
+        logger.warning('Attempted to close a non-existing QTM connection')
 
 
 def test_qtm_connection():

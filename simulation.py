@@ -3,7 +3,6 @@ import csv
 import numpy
 import qasync
 import qwt
-# import random
 import sim_user_interface
 import sys
 import uav_control_law
@@ -26,11 +25,11 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
         self.graph_display_time = 3                 # (s)
 
         self.uav = Agent('cf1_sim', 'No radio')
-        self.uav.extpos = RT3DMarkerPositionNoLabel(0, 0, 0.4, 0)
-        self.uav.velocity = [0, 0, 0]
-        self.uav.yaw = 0
+        self.uav.position = RT3DMarkerPositionNoLabel(0.0, 0.0, 0.4, 0)
+        self.uav.velocity = RT3DMarkerPositionNoLabel(0.0, 0.0, 0.0, 0)
+        self.uav.yaw = 0.0
         self.robot = Robot('Cible')
-        self.robot.extpos = RT3DMarkerPositionNoLabel(0, 0, 0, 0)
+        self.robot.position = RT3DMarkerPositionNoLabel(0.0, 0.0, 0.0, 0)
         self.vx_e = 0
         self.vy_e = 0
         self.x_e = 0
@@ -180,8 +179,8 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
         self.previous_x_n = 0
         self.previous_y_n = 0
 
-        self.uav.extpos = RT3DMarkerPositionNoLabel(0, 0, 0.4, 0)
-        self.uav.velocity = [0, 0, 0]
+        self.uav.position = RT3DMarkerPositionNoLabel(0.0, 0.0, 0.4, 0)
+        self.uav.velocity = RT3DMarkerPositionNoLabel(0.0, 0.0, 0.0, 0)
         self.uav.yaw = 0
         self.uav.state = 'standby'
 
@@ -260,10 +259,12 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
 
             self.vx_e = self.vx_e + ax_e * self.delta_t
             self.vy_e = self.vy_e + ay_e * self.delta_t
-            self.uav.velocity = [self.vx_e, self.vy_e, 0]
 
             self.x_e = self.x_e + self.vx_e * self.delta_t
             self.y_e = self.y_e + self.vy_e * self.delta_t
+
+            self.uav.position = RT3DMarkerPositionNoLabel(self.x_e, self.y_e, 0.4, 0)
+            self.uav.velocity = RT3DMarkerPositionNoLabel(self.vx_e, self.vy_e, 0.0, 0)
 
             yaw = self.uav.yaw - (yaw_rate * self.delta_t)
             if yaw > 180:
@@ -273,47 +274,34 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
             self.uav.yaw = yaw
             self.yaw.setText(str(round(self.uav.yaw)) + ' °')
 
-            self.uav.extpos = RT3DMarkerPositionNoLabel(self.x_e, self.y_e, 0.4, 0)
-
             self.graph_xm = self.graph_xm[1:]
             self.graph_xm.append(self.x_e)
             self.graph_ym = self.graph_ym[1:]
             self.graph_ym.append(self.y_e)
 
             self.graph_xr = self.graph_xr[1:]
-            self.graph_xr.append(self.robot.extpos.x)
+            self.graph_xr.append(self.robot.position.x)
             self.graph_yr = self.graph_yr[1:]
-            self.graph_yr.append(self.robot.extpos.y)
+            self.graph_yr.append(self.robot.position.y)
 
             self.graph_xg = self.graph_xg[1:]
             self.graph_xg.append(xg)
             self.graph_yg = self.graph_yg[1:]
             self.graph_yg.append(yg)
 
-            self.graph_x_sight_left = [self.uav.extpos.x,
-                                       self.uav.extpos.x + 1 * numpy.cos((self.uav.yaw + 20) * numpy.pi / 180)]
-            self.graph_y_sight_left = [self.uav.extpos.y,
-                                       self.uav.extpos.y + 1 * numpy.sin((self.uav.yaw + 20) * numpy.pi / 180)]
-            self.graph_x_sight_right = [self.uav.extpos.x,
-                                        self.uav.extpos.x + 1 * numpy.cos((self.uav.yaw - 20) * numpy.pi / 180)]
-            self.graph_y_sight_right = [self.uav.extpos.y,
-                                        self.uav.extpos.y + 1 * numpy.sin((self.uav.yaw - 20) * numpy.pi / 180)]
+            self.graph_x_sight_left = [self.uav.position.x,
+                                       self.uav.position.x + 1 * numpy.cos((self.uav.yaw + 20) * numpy.pi / 180)]
+            self.graph_y_sight_left = [self.uav.position.y,
+                                       self.uav.position.y + 1 * numpy.sin((self.uav.yaw + 20) * numpy.pi / 180)]
+            self.graph_x_sight_right = [self.uav.position.x,
+                                        self.uav.position.x + 1 * numpy.cos((self.uav.yaw - 20) * numpy.pi / 180)]
+            self.graph_y_sight_right = [self.uav.position.y,
+                                        self.uav.position.y + 1 * numpy.sin((self.uav.yaw - 20) * numpy.pi / 180)]
 
             self.graph_time = self.graph_time[1:]
             self.graph_time.append(self.uav.timestamp)
 
     def update_target_coordinates(self):
-        # xr = self.robot.extpos.x + random.uniform(-0.01, 0.01)
-        # if xr > 0.5:
-        #     xr = 0.5
-        # if xr < -0.5:
-        #     xr = -0.5
-        # yr = self.robot.extpos.y + random.uniform(-0.01, 0.01)
-        # if yr > 0.5:
-        #     yr = 0.5
-        # if yr < -0.5:
-        #     yr = -0.5
-
         radius = 0.5  # (m)
         period = 8 * numpy.pi  # (s)
         frequency = 1 / period  # (Hz)
@@ -321,7 +309,7 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
         xr = radius * numpy.cos(omega * self.uav.circle_t)
         yr = radius * numpy.sin(omega * self.uav.circle_t)
 
-        self.robot.extpos = RT3DMarkerPositionNoLabel(xr, yr, 0, 0)
+        self.robot.position = RT3DMarkerPositionNoLabel(xr, yr, 0, 0)
 
     async def update_graph(self):
         while not self.stopped:

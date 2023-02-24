@@ -19,6 +19,8 @@ class GraphicRepresentation:
         self.name = vehicle.name
         self.type = vehicle_type
         self.vehicle = vehicle
+
+        color = QPen(QtCore.Qt.blue)
         if self.type == 'UAV':
             color = QPen(QtCore.Qt.black)
         elif self.type == 'Robot':

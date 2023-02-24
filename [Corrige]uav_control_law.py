@@ -8,22 +8,29 @@ from robot_class import Robot
 logger = logging.getLogger(__name__)
 
 
-def circle(uav: Agent):
+def circle(uav: Agent) -> (float, float, float, int, float, float):
     """
     Method called at each iteration of the program if the circle mode is active
     (every time a new packet is received from QTM -> ~ every 0.02s)
     Generates the coordinates (x, y, z, and yaw) of the next position to reach on the circle
     """
 
-    t = uav.circle_t    # (s)
+    t = uav.circle_t  # (s)
 
     # ------------------ A remplir --------------------- #
     #
     #
-    targeted_x = 0      # (m)
-    targeted_y = 0      # (m)
-    targeted_z = 0.4    # (m)
-    targeted_yaw = 0    # (rad)
+    # -- Parameters -- #
+    radius = 0.5            # (m)
+    period = 2 * numpy.pi   # (s)
+    frequency = 1 / period  # (Hz)
+    omega = 2 * numpy.pi * frequency  # (rad/s)
+    #
+    # -- Target point -- #
+    targeted_x = radius * numpy.cos(omega * t)      # (m)
+    targeted_y = radius * numpy.sin(omega * t)      # (m)
+    targeted_z = 0.5    # (m)
+    targeted_yaw = 0    # (°)
     #
     #
     # -------------------------------------------------- #
@@ -32,12 +39,12 @@ def circle(uav: Agent):
         roll, pitch, yaw_rate, thrust = control_law(uav, targeted_x, targeted_y, targeted_z, targeted_yaw)
         return roll, pitch, yaw_rate, thrust, targeted_x, targeted_y
     except Exception as e:
-        logger.error('Error | ' + str(e) + ' | detected in uav_control_law.control_law() function')
+        logger.error('Error "' + str(e) + '" detected in uav_control_law.control_law() function')
         uav.error = e
         uav.standby()
 
 
-def circle_tangent_x_axis(uav: Agent):
+def circle_tangent_x_axis(uav: Agent) -> (float, float, float, int, float, float):
     """
     Method called at each iteration of the program if the circle_with_tangent_x_axis mode is active
     (every time a new packet is received from QTM -> ~ every 0.02s)
@@ -51,10 +58,20 @@ def circle_tangent_x_axis(uav: Agent):
     # ------------------ A remplir --------------------- #
     #
     #
-    targeted_x = 0      # (m)
-    targeted_y = 0      # (m)
-    targeted_z = 0.4    # (m)
-    targeted_yaw = 0    # (rad)
+    # -- Parameters -- #
+    radius = 0.5            # (m)
+    period = 2 * numpy.pi   # (s)
+    frequency = 1 / period  # (Hz)
+    omega = 2 * numpy.pi * frequency  # (rad/s)
+    #
+    # -- Target point -- #
+    targeted_x = radius * numpy.cos(omega * t)      # (m)
+    targeted_y = radius * numpy.sin(omega * t)      # (m)
+    targeted_z = 0.5    # (m)
+    #
+    #
+    # targeted_yaw = - np.arctan2(vx, vy) + np.pi/2   # (rad)
+    targeted_yaw = omega * t + numpy.pi / 2     # (rad)
     #
     #
     # -------------------------------------------------- #
@@ -63,12 +80,12 @@ def circle_tangent_x_axis(uav: Agent):
         roll, pitch, yaw_rate, thrust = control_law(uav, targeted_x, targeted_y, targeted_z, targeted_yaw)
         return roll, pitch, yaw_rate, thrust, targeted_x, targeted_y
     except Exception as e:
-        logger.error('Error | ' + str(e) + ' | detected in uav_control_law.control_law() function')
+        logger.error('Error "' + str(e) + '" detected in uav_control_law.control_law() function')
         uav.error = e
         uav.standby()
 
 
-def point_of_interest(uav: Agent, target: Robot):
+def point_of_interest(uav: Agent, target: Robot) -> (float, float, float, int, float, float):
     """
     Method called at each iteration of the program if the point_of_interest mode is active
     (every time a new packet is received from QTM -> ~ every 0.02s)
@@ -78,18 +95,28 @@ def point_of_interest(uav: Agent, target: Robot):
     t = uav.circle_t                # (s)
     robot_x = target.position.x     # (m)
     robot_y = target.position.y     # (m)
-    # x = uav.position.x              # (m)
-    # y = uav.position.y              # (m)
+    x = uav.position.x              # (m)
+    y = uav.position.y              # (m)
     # vx = uav.velocity.x             # (m/s)
     # vy = uav.velocity.y             # (m/s)
 
     # ------------------ A remplir --------------------- #
     #
     #
-    targeted_x = 0      # (m)
-    targeted_y = 0      # (m)
-    targeted_z = 0.4    # (m)
-    targeted_yaw = 0    # (rad)
+    # -- Parameters -- #
+    radius = 0.5            # (m)
+    period = 2 * numpy.pi   # (s)
+    frequency = 1 / period  # (Hz)
+    omega = 2 * numpy.pi * frequency  # (rad/s)
+    #
+    # -- Target point -- #
+    targeted_x = robot_x + radius * numpy.cos(omega * t)  # (m)
+    targeted_y = robot_y + radius * numpy.sin(omega * t)  # (m)
+    targeted_z = 0.5        # (m)
+    #
+    targeted_yaw = - numpy.arctan2(robot_x - x, robot_y - y) + numpy.pi / 2  # (rad)
+    # targeted_yaw = - np.arctan2(vx, vy) + np.pi   # (rad)
+    # targeted_yaw = omega * t + np.pi  # (rad)
     #
     #
     # -------------------------------------------------- #
@@ -98,12 +125,16 @@ def point_of_interest(uav: Agent, target: Robot):
         roll, pitch, yaw_rate, thrust = control_law(uav, targeted_x, targeted_y, targeted_z, targeted_yaw)
         return roll, pitch, yaw_rate, thrust, targeted_x, targeted_y
     except Exception as e:
-        logger.error('Error | ' + str(e) + ' | detected in uav_control_law.control_law() function')
+        logger.error('Error "' + str(e) + '" detected in uav_control_law.control_law() function')
         uav.error = e
         uav.standby()
 
 
-def control_law(uav: Agent, targeted_x: float, targeted_y: float, targeted_z: float, targeted_yaw: float):
+def control_law(uav: Agent,
+                targeted_x: float,
+                targeted_y: float,
+                targeted_z: float,
+                targeted_yaw: float) -> (float, float, float, int):
     """
     Generates the command input (roll angle, pitch angle, yaw angle, thrust) that will be forwarded to the UAV,
     based on the UAV current state and its targeted position
@@ -113,7 +144,7 @@ def control_law(uav: Agent, targeted_x: float, targeted_y: float, targeted_z: fl
     measured_x = uav.position.x     # (m)
     measured_y = uav.position.y     # (m)
     measured_z = uav.position.z     # (m)
-    measured_yaw = uav.yaw * numpy.pi / 180     # (rad)
+    measured_yaw = uav.yaw * numpy.pi / 180  # (rad)
     measured_vx = uav.velocity.x    # (m/s)
     measured_vy = uav.velocity.y    # (m/s)
     measured_vz = uav.velocity.z    # (m/s)
@@ -122,14 +153,35 @@ def control_law(uav: Agent, targeted_x: float, targeted_y: float, targeted_z: fl
     # ------------------ A remplir --------------------- #
     #
     #
-    pitch = 0  # (rad)
-    roll = 0  # (rad)
+    # -- Parameters -- #
+    xy_kp = 1
+    xy_kd = 0.4
+    #
+    # -- Errors -- #
+    x_error = targeted_x - measured_x
+    y_error = targeted_y - measured_y
+    #
+    # -- Coordinates system change (rotation matrix) -- #
+    xn_error = x_error * numpy.cos(measured_yaw) + y_error * numpy.sin(measured_yaw)
+    yn_error = - x_error * numpy.sin(measured_yaw) + y_error * numpy.cos(measured_yaw)
+    xn_velocity = measured_vx * numpy.cos(measured_yaw) + measured_vy * numpy.sin(measured_yaw)
+    yn_velocity = - measured_vx * numpy.sin(measured_yaw) + measured_vy * numpy.cos(measured_yaw)
+    #
+    # -- Pitch control law -- #
+    px = xy_kp * xn_error
+    dx = - xn_velocity
+    pitch = xy_kd * (px + dx)
+    #
+    # -- Roll control law -- #
+    py = xy_kp * yn_error
+    dy = - yn_velocity
+    roll = - xy_kd * (py + dy)
     #
     #
     # -------------------------------------------------- #
 
     # -- Yaw control law -- #
-    yaw_kp = 10
+    yaw_kp = 5
     targeted_yaw = targeted_yaw % (2 * numpy.pi)
     if targeted_yaw > numpy.pi:
         targeted_yaw = targeted_yaw - (2 * numpy.pi)
