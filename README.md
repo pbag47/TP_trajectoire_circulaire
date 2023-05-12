@@ -17,7 +17,7 @@ La branche courante ("Windows") permet le déploiement d'une version réadaptée
 - Ouvrir un terminal de commande et mettre à jour pip :
   + C:\Users\ [nom d'utilisateur] > ```pip install --upgrade pip```
 
-### 1.2. Instalation de PyCharm
+### 1.2. Installation de PyCharm
 - Installer PyCharm Community Edition via le site officiel de JetBrains.
 
 ### 1.3. Installation de JupyterLab
