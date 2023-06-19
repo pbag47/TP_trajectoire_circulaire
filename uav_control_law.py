@@ -20,10 +20,10 @@ def circle(uav: Agent):
     # ------------------ A remplir --------------------- #
     #
     #
-    targeted_x = 0      # (m)
-    targeted_y = 0      # (m)
-    targeted_z = 0.4    # (m)
-    targeted_yaw = 0    # (rad)
+    targeted_x = 0       # (m)
+    targeted_y = 0       # (m)
+    targeted_z = 0.4     # (m)
+    targeted_yaw = 0     # (rad)
     #
     #
     # -------------------------------------------------- #
@@ -51,10 +51,10 @@ def circle_tangent_x_axis(uav: Agent):
     # ------------------ A remplir --------------------- #
     #
     #
-    targeted_x = 0      # (m)
-    targeted_y = 0      # (m)
-    targeted_z = 0.4    # (m)
-    targeted_yaw = 0    # (rad)
+    targeted_x = 0       # (m)
+    targeted_y = 0       # (m)
+    targeted_z = 0.4     # (m)
+    targeted_yaw = 0     # (rad)
     #
     #
     # -------------------------------------------------- #
