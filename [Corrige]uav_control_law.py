@@ -30,7 +30,7 @@ def circle(uav: Agent) -> (float, float, float, int, float, float):
     targeted_x = radius * numpy.cos(omega * t)      # (m)
     targeted_y = radius * numpy.sin(omega * t)      # (m)
     targeted_z = 0.5    # (m)
-    targeted_yaw = 0    # (°)
+    targeted_yaw = 0    # (rad)
     #
     #
     # -------------------------------------------------- #

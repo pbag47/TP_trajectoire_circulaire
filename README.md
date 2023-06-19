@@ -73,7 +73,7 @@ EOF
 - Quitter l'environnement virtuel :
   + (cfclient) ~$ ```deactivate```
 
-### 1.4. Instalation de PyCharm
+### 1.4. Installation de PyCharm
 - Installer PyCharm Community Edition via le gestionnaire de paquets "snap" :
   + ~$ ```sudo snap install pycharm-community --classic```
 
