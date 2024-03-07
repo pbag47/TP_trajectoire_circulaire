@@ -5,9 +5,11 @@ import os
 import struct
 
 from fcntl import ioctl
-from swarm_object_class import SwarmObject
 from threading import Thread
 from typing import Union
+
+from flight_state_class import FlightState
+from swarm_object_class import SwarmObject
 
 
 logger = logging.getLogger(__name__)
@@ -104,41 +106,43 @@ class Joystick:
         if button == 'Takeoff / Land' and value:
             logger.info('Takeoff / Land button triggered')
             for agt in self.swarm.swarm_agent_list:
-                if agt.enabled and not agt.is_flying:
+                if agt.enabled and agt.state == FlightState.NOT_FLYING:
                     agt.takeoff()
-                elif agt.enabled and agt.is_flying:
+                elif agt.enabled:
                     agt.land()
 
         if button == 'Standby' and value:
             logger.info('Standby button triggered')
             for agt in self.swarm.swarm_agent_list:
-                if agt.enabled and agt.is_flying:
+                if agt.enabled and not agt.state == FlightState.NOT_FLYING:
                     agt.standby()
 
         if button == 'Manual flight' and value:
             logger.info('Manual flight button triggered')
             for agt in self.swarm.swarm_agent_list:
-                if agt.enabled and agt.is_flying and any([agt.name == manual for manual in
-                                                          self.swarm.manual_flight_agents_list]):
+                if agt.enabled and \
+                        not agt.state == FlightState.NOT_FLYING and \
+                        any([agt.name == manual for manual in
+                             self.swarm.manual_flight_agents_list]):
                     self.swarm.manual_z = agt.position.z
                     agt.manual_flight()
 
         if button == 'Circle' and value:
             logger.info('Circle button triggered')
             for agt in self.swarm.swarm_agent_list:
-                if agt.enabled and agt.is_flying:
+                if agt.enabled and not agt.state == FlightState.NOT_FLYING:
                     agt.circle()
 
         if button == 'Circle with tangent x axis' and value:
             logger.info('Circle with tangent x axis button triggered')
             for agt in self.swarm.swarm_agent_list:
-                if agt.enabled and agt.is_flying:
+                if agt.enabled and not agt.state == FlightState.NOT_FLYING:
                     agt.circle_with_tangent_x_axis()
 
         if button == 'Point of interest' and value:
             logger.info('Point Of Interest button triggered')
             for agt in self.swarm.swarm_agent_list:
-                if agt.enabled and agt.is_flying:
+                if agt.enabled and not agt.state == FlightState.NOT_FLYING:
                     agt.point_of_interest()
 
         if button == 'Yaw-' and value:

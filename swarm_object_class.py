@@ -3,6 +3,7 @@ import numpy
 import uav_control_law
 
 from agent_class import Agent
+from flight_state_class import FlightState
 from robot_class import Robot
 from typing import List
 
@@ -33,31 +34,31 @@ class SwarmObject:
     def flight_sequence(self):
         if self.ready_to_fly:
             for agent in self.swarm_agent_list:
-                if agent.enabled and agent.state != 'Not flying':
-                    if agent.state == 'Standby':
+                if agent.enabled and not agent.state == FlightState.NOT_FLYING:
+                    if agent.state == FlightState.STANDBY:
                         self.standby_control_law(agent)
 
-                    if agent.state == 'Takeoff':
+                    if agent.state == FlightState.TAKEOFF:
                         self.takeoff_control_law(agent)
 
-                    if agent.state == 'Land':
+                    if agent.state == FlightState.LAND:
                         self.landing_control_law(agent)
 
-                    if agent.state == 'Manual':
+                    if agent.state == FlightState.MANUAL_FLIGHT:
                         self.manual_control_law(agent)
 
-                    if agent.state == 'Circle':
+                    if agent.state == FlightState.CIRCLE:
                         self.circle(agent)
 
-                    if agent.state == 'Circle with tangent x axis':
+                    if agent.state == FlightState.CIRCLE_TGX:
                         self.circle_tangent_x_axis(agent)
 
-                    if agent.state == 'Point of interest':
+                    if agent.state == FlightState.POI:
                         self.point_of_interest(agent)
                 else:
                     agent.cf.commander.send_stop_setpoint()
         else:
-            if all([(agent.battery_test_passed and agent.position_test_passed) for agent in self.swarm_agent_list]):
+            if all([agent.battery_test_passed for agent in self.swarm_agent_list]):
                 self.ready_to_fly = True
                 print('UAV connection recap :')
                 for agent in self.swarm_agent_list:
@@ -138,7 +139,6 @@ class SwarmObject:
                       agent.position.z], agent.takeoff_position)
         if d <= self.distance_to_waypoint_threshold:
             logger.info(agent.name + ' Takeoff completed')
-            agent.is_flying = True
             agent.standby()
             agent.standby_position[2] = agent.takeoff_height
 

@@ -13,6 +13,8 @@ from PyQt5.QtGui import QPen
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from qwt import QwtPlotCurve, QwtPlotGrid
 from qtm.packet import RT3DMarkerPositionNoLabel
+
+from flight_state_class import FlightState
 from robot_class import Robot
 
 
@@ -49,7 +51,7 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
 
         self.uav.csv_logger = writer
         self.robot.csv_logger = writer
-        self.uav.state = 'standby'
+        self.uav.state = FlightState.STANDBY
         self.graph_length = round(self.graph_display_time/self.delta_t)
 
         self.graph_time = [0.0] * self.graph_length
@@ -166,7 +168,7 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
         self.yaw.setText(str(round(self.uav.yaw)) + ' °')
 
     def pause_button_callback(self):
-        self.uav.state = 'pause'
+        self.uav.state = FlightState.NOT_FLYING
 
     def reset_button_callback(self):
         self.vx_e = 0
@@ -182,7 +184,7 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
         self.uav.position = RT3DMarkerPositionNoLabel(0.0, 0.0, 0.4, 0)
         self.uav.velocity = RT3DMarkerPositionNoLabel(0.0, 0.0, 0.0, 0)
         self.uav.yaw = 0
-        self.uav.state = 'standby'
+        self.uav.state = FlightState.STANDBY
 
         self.psi = 0
         self.yaw.setText(str(0) + ' °')
@@ -197,19 +199,19 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
         self.graph_y_sight_right = [0.0, 0.0]
 
     def step_button_callback(self):
-        self.uav.state = 'step'
+        self.uav.state = FlightState.STEP
         self.uav.circle_t = 0
 
     def circle_button_callback(self):
-        self.uav.state = 'circle'
+        self.uav.state = FlightState.CIRCLE
         self.uav.circle_t = 0
 
     def circle_wth_tangent_x_axis_callback(self):
-        self.uav.state = 'circle_wth_tgx'
+        self.uav.state = FlightState.CIRCLE_TGX
         self.uav.circle_t = 0
 
     def point_of_interest_button_callback(self):
-        self.uav.state = 'POI'
+        self.uav.state = FlightState.POI
         self.uav.circle_t = 0
 
     async def timer(self):
@@ -226,25 +228,25 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
             - Calculates the response of the UAV model (double-integrator) to update the position of the virtual
               UAV
         """
-        if not self.uav.state == 'pause':
+        if not self.uav.state == FlightState.NOT_FLYING:
             roll = 0
             pitch = 0
             yaw_rate = 0
             xg = 0
             yg = 0
 
-            if self.uav.state == 'step':
+            if self.uav.state == FlightState.STEP:
                 xg = 1
                 yg = 1
                 roll, pitch, yaw_rate, _ = uav_control_law.control_law(self.uav, xg, yg, 0.4, self.psi * numpy.pi / 180)
 
-            if self.uav.state == 'circle':
+            if self.uav.state == FlightState.CIRCLE:
                 roll, pitch, yaw_rate, _, xg, yg = uav_control_law.circle(self.uav)
 
-            if self.uav.state == 'circle_wth_tgx':
+            if self.uav.state == FlightState.CIRCLE_TGX:
                 roll, pitch, yaw_rate, _, xg, yg = uav_control_law.circle_tangent_x_axis(self.uav)
 
-            if self.uav.state == 'POI':
+            if self.uav.state == FlightState.POI:
                 self.update_target_coordinates()
                 roll, pitch, yaw_rate, _, xg, yg = uav_control_law.point_of_interest(self.uav, self.robot)
 

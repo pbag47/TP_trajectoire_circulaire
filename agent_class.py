@@ -4,6 +4,8 @@ import logging
 import numpy
 import time
 
+from flight_state_class import FlightState
+
 # noinspection PyProtectedMember
 from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie import Crazyflie
@@ -50,11 +52,9 @@ class Agent:
 
         # ---- Attributes initialization ---- #
         self.cf:                    Crazyflie = Crazyflie(rw_cache='./cache')
-        self.state:                 str = 'Not flying'
-        self.is_flying:             bool = False
+        self.state:                 int = FlightState.NOT_FLYING
         self.enabled:               bool = False
         self.battery_test_passed:   bool = False
-        self.position_test_passed:  bool = False
 
         self.setup_finished:            bool = False
         self.initial_battery_voltage:   float = 0.0                 # (V)
@@ -108,7 +108,6 @@ class Agent:
 
     def cf_connection_failed_callback(self, _, __):
         self.battery_test_passed = True
-        self.position_test_passed = True
         self.enabled = False
         logger.warning(self.name + ' connection attempt failed')
 
@@ -122,8 +121,7 @@ class Agent:
         log_config.start()
         self.cf.param.set_value('stabilizer.estimator', str(self.stabilizer_estimator))
         self.cf.param.set_value('flightmode.posSet', str(self.flightmode_pos_set))
-        self.check_initial_position()
-        if self.enabled:
+        if self.enabled and self.check_initial_position():
             self.start_attitude_logs()
         else:
             self.stop()
@@ -150,9 +148,10 @@ class Agent:
         if self.position.id is None:
             logger.error(self.name + ' not tracked by QTM, flight disabled')
             self.enabled = False
+            return False
         else:
             logger.info(self.name + ' is tracked by QTM')
-            self.position_test_passed = True
+            return True
 
     def start_attitude_logs(self):
         self.cf.log.add_config(self.log_config)
@@ -179,14 +178,13 @@ class Agent:
             if self.position.z < self.z_boundaries[0] or self.position.z > self.z_boundaries[1]:
                 logger.error(self.name + ' outside boundaries on the z axis : ' + str(round(self.position.z, 2)) + ' m')
                 self.stop()
-            if round(data['pm.state']) == 3 and self.state != 'Land':
+            if round(data['pm.state']) == 3 and self.state != FlightState.LAND:
                 logger.error(self.name + ' low battery level, automatic landing triggered')
                 self.land()
 
     def cf_disconnected_callback(self, _):
         self.enabled = False
-        self.is_flying = False
-        self.state = 'Not flying'
+        self.state = FlightState.NOT_FLYING
         logger.warning(self.name + ' disconnected')
 
     def stop(self):
@@ -195,8 +193,7 @@ class Agent:
                 self.log_config.stop()
             except AttributeError:
                 logger.info(self.name + ' unable to stop attitude logging')
-        self.state = 'Not flying'
-        self.is_flying = False
+        self.state = FlightState.NOT_FLYING
         self.enabled = False
         self.cf.commander.send_stop_setpoint()
         logger.info(self.name + ' stopped')
@@ -233,43 +230,42 @@ class Agent:
 
     def standby(self):
         logger.info(self.name + ' Switch to Standby mode')
-        self.state = 'Standby'
+        self.state = FlightState.STANDBY
         self.standby_position = [self.position.x, self.position.y, self.position.z]
         self.standby_yaw = self.yaw
 
     def takeoff(self):
         logger.info(self.name + ' Switch to Takeoff mode')
-        self.state = 'Takeoff'
-        self.is_flying = True
+        self.state = FlightState.TAKEOFF
         self.takeoff_position = [self.position.x, self.position.y, self.takeoff_height]
         self.takeoff_yaw = self.yaw
 
     def land(self):
         logger.info(self.name + ' Switch to Landing mode')
-        self.state = 'Land'
+        self.state = FlightState.LAND
         self.land_position = [self.position.x, self.position.y, 0.0]
         self.land_yaw = self.yaw
 
     def manual_flight(self):
         logger.info(self.name + ' Switch to Manual flight mode')
-        self.state = 'Manual'
+        self.state = FlightState.MANUAL_FLIGHT
         self.standby_position = [self.position.x, self.position.y, self.position.z]
         self.standby_yaw = self.yaw
 
     def circle(self):
         logger.info(self.name + ' Circle with constant yaw')
         self.circle_t = 0.0
-        self.state = 'Circle'
+        self.state = FlightState.CIRCLE
 
     def circle_with_tangent_x_axis(self):
         logger.info(self.name + ' Circle with x axis tangent to trajectory')
         self.circle_t = 0.0
-        self.state = 'Circle with tangent x axis'
+        self.state = FlightState.CIRCLE_TGX
 
     def point_of_interest(self):
         logger.info(self.name + ' Point of Interest')
         self.circle_t = 0.0
-        self.state = 'Point of interest'
+        self.state = FlightState.POI
 
 
 def test_cf_connection():
