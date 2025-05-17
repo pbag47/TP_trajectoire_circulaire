@@ -5,7 +5,7 @@ import numpy
 # import qwt
 import sim_user_interface
 import sys
-import uav_control_law
+from uav_control_law import circle, circle_tangent_x_axis, point_of_interest, control_law
 
 from agent_class import Agent
 from PySide6 import QtCore, QtGui
@@ -232,17 +232,17 @@ class Window(sim_user_interface.UIMainWindow):
             if self.uav.state == FlightState.STEP:
                 xg = 1
                 yg = 1
-                roll, pitch, yaw_rate, _ = uav_control_law.control_law(self.uav, xg, yg, 0.4, self.psi * numpy.pi / 180)
+                roll, pitch, yaw_rate, _ = control_law(self.uav, xg, yg, 0.4, self.psi * numpy.pi / 180)
 
             if self.uav.state == FlightState.CIRCLE:
-                roll, pitch, yaw_rate, _, xg, yg = uav_control_law.circle(self.uav)
+                roll, pitch, yaw_rate, _, xg, yg = circle(self.uav)
 
             if self.uav.state == FlightState.CIRCLE_TGX:
-                roll, pitch, yaw_rate, _, xg, yg = uav_control_law.circle_tangent_x_axis(self.uav)
+                roll, pitch, yaw_rate, _, xg, yg = circle_tangent_x_axis(self.uav)
 
             if self.uav.state == FlightState.POI:
                 self.update_target_coordinates()
-                roll, pitch, yaw_rate, _, xg, yg = uav_control_law.point_of_interest(self.uav, self.robot)
+                roll, pitch, yaw_rate, _, xg, yg = point_of_interest(self.uav, self.robot)
 
             roll = roll * numpy.pi / 180
             pitch = pitch * numpy.pi / 180

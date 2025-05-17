@@ -1,6 +1,6 @@
 import logging
 import numpy
-import uav_control_law
+from uav_control_law import circle, circle_tangent_x_axis, point_of_interest
 
 from agent_class import Agent
 from flight_state_class import FlightState
@@ -173,7 +173,7 @@ class SwarmObject:
     @staticmethod
     def circle(agent: Agent):
         try:
-            roll, pitch, yaw, thrust, _, __ = uav_control_law.circle(agent)
+            roll, pitch, yaw, thrust, _, __ = circle(agent)
             agent.circle_t = agent.circle_t + agent.delta_t
             agent.cf.commander.send_setpoint(roll, pitch, yaw, thrust)
         except Exception as e:
@@ -184,7 +184,7 @@ class SwarmObject:
     @staticmethod
     def circle_tangent_x_axis(agent: Agent):
         try:
-            roll, pitch, yaw, thrust, _, __ = uav_control_law.circle_tangent_x_axis(agent)
+            roll, pitch, yaw, thrust, _, __ = circle_tangent_x_axis(agent)
             agent.circle_t = agent.circle_t + agent.delta_t
             agent.cf.commander.send_setpoint(roll, pitch, yaw, thrust)
         except Exception as e:
@@ -194,7 +194,7 @@ class SwarmObject:
 
     def point_of_interest(self, agent: Agent):
         try:
-            roll, pitch, yaw, thrust, _, __ = uav_control_law.point_of_interest(agent, self.robot_list[0])
+            roll, pitch, yaw, thrust, _, __ = point_of_interest(agent, self.robot_list[0])
             agent.circle_t = agent.circle_t + agent.delta_t
             agent.cf.commander.send_setpoint(roll, pitch, yaw, thrust)
         except Exception as e:
