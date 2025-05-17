@@ -5,7 +5,7 @@ import numpy
 # import qwt
 import sim_user_interface
 import sys
-from uav_control_law import circle, circle_tangent_x_axis, point_of_interest, control_law
+from _CORRIGE_uav_control_law import circle, circle_tangent_x_axis, point_of_interest, control_law
 
 from agent_class import Agent
 from PySide6 import QtCore, QtGui
@@ -84,11 +84,11 @@ class Window(sim_user_interface.UIMainWindow):
         self.xy_sight_right_curve = self.xy_graph.plot(self.graph_x_sight_right, self.graph_y_sight_right)
 
         self.xm_curve.setData(self.graph_time, self.graph_xm)
-        self.xm_curve.setPen(QPen(QtGui.QColorConstants.Black, 0, QtCore.Qt.PenStyle.SolidLine))
+        self.xm_curve.setPen(QPen(QtGui.QColorConstants.Green, 0, QtCore.Qt.PenStyle.SolidLine))
         self.ym_curve.setData(self.graph_time, self.graph_ym)
-        self.ym_curve.setPen(QPen(QtGui.QColorConstants.Black, 0, QtCore.Qt.PenStyle.SolidLine))
+        self.ym_curve.setPen(QPen(QtGui.QColorConstants.Green, 0, QtCore.Qt.PenStyle.SolidLine))
         self.xym_curve.setData(self.graph_xm, self.graph_ym)
-        self.xym_curve.setPen(QPen(QtGui.QColorConstants.Black, 0, QtCore.Qt.PenStyle.SolidLine))
+        self.xym_curve.setPen(QPen(QtGui.QColorConstants.Green, 0, QtCore.Qt.PenStyle.SolidLine))
 
         self.xg_curve.setData(self.graph_time, self.graph_xg)
         self.xg_curve.setPen(QPen(QtGui.QColorConstants.Blue, 0, QtCore.Qt.PenStyle.DotLine))
@@ -129,13 +129,13 @@ class Window(sim_user_interface.UIMainWindow):
         self.x_graph.setTitle('X (m) vs time (s)')
         self.x_graph.setLabel('bottom', 'Time (s)')
         self.x_graph.setLabel('left', 'X (m)')
-        self.x_graph.setXRange(-1.25, 1.25)
+        self.x_graph.setYRange(-1.25, 1.25)
         self.x_graph.addLegend()
 
         self.y_graph.setTitle('Y (m) vs time (s)')
         self.y_graph.setLabel('bottom', 'Time (s)')
         self.y_graph.setLabel('left', 'Y (m)')
-        self.y_graph.setXRange(-1.25, 1.25)
+        self.y_graph.setYRange(-1.25, 1.25)
         self.y_graph.addLegend()
 
         self.xy_graph.setTitle('X (m) vs Y (m)')
@@ -319,9 +319,6 @@ class Window(sim_user_interface.UIMainWindow):
 
         self.xy_sight_left_curve.setData(self.graph_x_sight_left, self.graph_y_sight_left)
         self.xy_sight_right_curve.setData(self.graph_x_sight_right, self.graph_y_sight_right)
-
-        # self.x_graph.setAxisScale(2, self.graph_time[0], self.graph_time[-1])
-        # self.y_graph.setAxisScale(2, self.graph_time[0], self.graph_time[-1])
 
 
 def main():
