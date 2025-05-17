@@ -1,6 +1,6 @@
 import logging
 
-from qtm.packet import RT3DMarkerPositionNoLabel
+from qtm_rt.packet import RT3DMarkerPositionNoLabel
 
 
 logger = logging.getLogger(__name__)

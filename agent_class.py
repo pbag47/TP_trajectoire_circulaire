@@ -9,7 +9,7 @@ from flight_state_class import FlightState
 # noinspection PyProtectedMember
 from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie import Crazyflie
-from qtm.packet import RT3DMarkerPositionNoLabel
+from qtm_rt.packet import RT3DMarkerPositionNoLabel
 from typing import List, Union
 
 

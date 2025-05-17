@@ -1,24 +1,29 @@
-import asyncio
+# import asyncio
 import csv
 import numpy
-import qasync
-import qwt
+# import qasync
+# import qwt
 import sim_user_interface
 import sys
 import uav_control_law
 
 from agent_class import Agent
-from PyQt5 import QtCore
-from PyQt5.QtGui import QPen
-from PyQt5.QtWidgets import QApplication, QMainWindow
-from qwt import QwtPlotCurve, QwtPlotGrid
-from qtm.packet import RT3DMarkerPositionNoLabel
+from PySide6 import QtCore, QtGui
+from PySide6.QtGui import QPen
+from PySide6.QtWidgets import QApplication
+from qtm_rt.packet import RT3DMarkerPositionNoLabel
+
+# from PyQt5 import QtCore
+# from PyQt5.QtGui import QPen
+# from PyQt5.QtWidgets import QApplication, QMainWindow
+# from qwt import QwtPlotCurve, QwtPlotGrid
+# from qtm.packet import RT3DMarkerPositionNoLabel
 
 from flight_state_class import FlightState
 from robot_class import Robot
 
 
-class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
+class Window(sim_user_interface.UIMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.stopped = False
@@ -66,39 +71,44 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
         self.graph_x_sight_right = [0.0, 0.0]
         self.graph_y_sight_right = [0.0, 0.0]
 
-        self.xm_curve = QwtPlotCurve('Measured x')
-        self.ym_curve = QwtPlotCurve('Measured y')
+        self.xm_curve = self.x_graph.plot(self.graph_time, self.graph_xm, 'Measured x')
+        self.ym_curve = self.y_graph.plot(self.graph_time, self.graph_ym, 'Measured y')
 
-        self.xg_curve = QwtPlotCurve('Targeted x')
-        self.yg_curve = QwtPlotCurve('Targeted y')
+        self.xg_curve = self.x_graph.plot(self.graph_time, self.graph_xg, 'Targeted x')
+        self.yg_curve = self.y_graph.plot(self.graph_time, self.graph_yg, 'Targeted y')
 
-        self.xym_curve = QwtPlotCurve('UAV position')
-        self.xyr_curve = QwtPlotCurve('Robot position')
+        self.xym_curve = self.xy_graph.plot(self.graph_xm, self.graph_ym, 'UAV position')
+        self.xyr_curve = self.xy_graph.plot(self.graph_xr, self.graph_yr, 'Robot position')
 
-        self.xy_sight_left_curve = QwtPlotCurve('UAV sight left limit')
-        self.xy_sight_right_curve = QwtPlotCurve('UAV sight right limit')
+        self.xy_sight_left_curve = self.xy_graph.plot(self.graph_x_sight_left, self.graph_y_sight_left)
+        self.xy_sight_right_curve = self.xy_graph.plot(self.graph_x_sight_right, self.graph_y_sight_right)
 
         self.xm_curve.setData(self.graph_time, self.graph_xm)
-        self.xm_curve.setPen(QPen(QtCore.Qt.black, 0, QtCore.Qt.SolidLine))
+        self.xm_curve.setPen(QPen(QtGui.QColorConstants.Black, 0, QtCore.Qt.PenStyle.SolidLine))
         self.ym_curve.setData(self.graph_time, self.graph_ym)
-        self.ym_curve.setPen(QPen(QtCore.Qt.black, 0, QtCore.Qt.SolidLine))
+        self.ym_curve.setPen(QPen(QtGui.QColorConstants.Black, 0, QtCore.Qt.PenStyle.SolidLine))
         self.xym_curve.setData(self.graph_xm, self.graph_ym)
-        self.xym_curve.setPen(QPen(QtCore.Qt.black, 0, QtCore.Qt.SolidLine))
+        self.xym_curve.setPen(QPen(QtGui.QColorConstants.Black, 0, QtCore.Qt.PenStyle.SolidLine))
 
         self.xg_curve.setData(self.graph_time, self.graph_xg)
-        self.xg_curve.setPen(QPen(QtCore.Qt.blue, 0, QtCore.Qt.DotLine))
+        self.xg_curve.setPen(QPen(QtGui.QColorConstants.Blue, 0, QtCore.Qt.PenStyle.DotLine))
         self.yg_curve.setData(self.graph_time, self.graph_yg)
-        self.yg_curve.setPen(QPen(QtCore.Qt.blue, 0, QtCore.Qt.DotLine))
+        self.yg_curve.setPen(QPen(QtGui.QColorConstants.Blue, 0, QtCore.Qt.PenStyle.DotLine))
 
         self.xyr_curve.setData(self.graph_xr, self.graph_yr)
-        self.xyr_curve.setPen(QPen(QtCore.Qt.red, 0, QtCore.Qt.DashLine))
+        self.xyr_curve.setPen(QPen(QtGui.QColorConstants.Red, 0, QtCore.Qt.PenStyle.DashLine))
 
         self.xy_sight_left_curve.setData(self.graph_x_sight_left, self.graph_y_sight_left)
-        self.xy_sight_left_curve.setPen(QPen(QtCore.Qt.darkGreen, 0, QtCore.Qt.DashDotLine))
+        self.xy_sight_left_curve.setPen(QPen(QtGui.QColorConstants.DarkGreen, 0, QtCore.Qt.PenStyle.DashDotLine))
         self.xy_sight_right_curve.setData(self.graph_x_sight_right, self.graph_y_sight_right)
-        self.xy_sight_right_curve.setPen(QPen(QtCore.Qt.darkGreen, 0, QtCore.Qt.DashDotLine))
+        self.xy_sight_right_curve.setPen(QPen(QtGui.QColorConstants.DarkGreen, 0, QtCore.Qt.PenStyle.DashDotLine))
 
-        self.setupUi(self)
+        self.timer = QtCore.QTimer()
+        self.timer.setInterval(20)
+        self.timer.timeout.connect(self.timer_callback)
+        self.timer.start()
+
+        # self.setup_ui(self)  # -- setup_ui was replaced by __init__ in sim_user_interface.py / UIMainWindow
         self.init_ui()
         self.show()
 
@@ -117,39 +127,24 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
         self.POI.clicked.connect(self.point_of_interest_button_callback)
 
         self.x_graph.setTitle('X (m) vs time (s)')
-        self.x_graph.setAxisTitle(2, 'Time (s)')
-        self.x_graph.setAxisTitle(0, 'X (m)')
-        self.x_graph.setAxisScale(0, -1.25, 1.25)
+        self.x_graph.setLabel('bottom', 'Time (s)')
+        self.x_graph.setLabel('left', 'X (m)')
+        self.x_graph.setXRange(-1.25, 1.25)
+        self.x_graph.addLegend()
 
         self.y_graph.setTitle('Y (m) vs time (s)')
-        self.y_graph.setAxisTitle(2, 'Time (s)')
-        self.y_graph.setAxisTitle(0, 'Y (m)')
-        self.y_graph.setAxisScale(0, -1.25, 1.25)
+        self.y_graph.setLabel('bottom', 'Time (s)')
+        self.y_graph.setLabel('left', 'Y (m)')
+        self.y_graph.setXRange(-1.25, 1.25)
+        self.y_graph.addLegend()
 
         self.xy_graph.setTitle('X (m) vs Y (m)')
-        self.xy_graph.setAxisTitle(2, 'X (m)')
-        self.xy_graph.setAxisTitle(0, 'Y (m)')
-        self.xy_graph.setAxisScale(0, -1.5, 1.5)
-        self.xy_graph.setAxisScale(2, -1.5, 1.5)
-
-        xy_graph_grid = QwtPlotGrid()
-        xy_graph_grid.setPen(QPen(QtCore.Qt.black, 0, QtCore.Qt.DotLine))
-
-        self.xm_curve.attach(self.x_graph)
-        self.xg_curve.attach(self.x_graph)
-
-        self.ym_curve.attach(self.y_graph)
-        self.yg_curve.attach(self.y_graph)
-
-        self.xym_curve.attach(self.xy_graph)
-        self.xyr_curve.attach(self.xy_graph)
-        self.xy_sight_left_curve.attach(self.xy_graph)
-        self.xy_sight_right_curve.attach(self.xy_graph)
-        xy_graph_grid.attach(self.xy_graph)
-
-        self.x_graph.insertLegend(qwt.QwtLegend(), qwt.QwtPlot.RightLegend)
-        self.y_graph.insertLegend(qwt.QwtLegend(), qwt.QwtPlot.RightLegend)
-        self.xy_graph.insertLegend(qwt.QwtLegend(), qwt.QwtPlot.RightLegend)
+        self.xy_graph.setLabel('bottom', 'X (m)')
+        self.xy_graph.setLabel('left', 'Y (m)')
+        self.xy_graph.setXRange(-1.5, 1.5)
+        self.xy_graph.setYRange(-1.5, 1.5)
+        self.xy_graph.showGrid(x=True, y=True)
+        self.xy_graph.addLegend()
 
     def stop_button_callback(self):
         self.stopped = True
@@ -214,12 +209,11 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
         self.uav.state = FlightState.POI
         self.uav.circle_t = 0
 
-    async def timer(self):
-        while not self.stopped:
-            await asyncio.sleep(self.delta_t)
-            self.uav.timestamp = self.uav.timestamp + self.delta_t
-            self.uav.circle_t = self.uav.circle_t + self.delta_t
-            self.calculate_uav_response()
+    def timer_callback(self):
+        self.uav.timestamp = self.uav.timestamp + self.delta_t
+        self.uav.circle_t = self.uav.circle_t + self.delta_t
+        self.calculate_uav_response()
+        self.update_graph()
 
     def calculate_uav_response(self):
         """
@@ -313,37 +307,29 @@ class Window(QMainWindow, sim_user_interface.Ui_MainWindow):
 
         self.robot.position = RT3DMarkerPositionNoLabel(xr, yr, 0, 0)
 
-    async def update_graph(self):
-        while not self.stopped:
-            await asyncio.sleep(self.delta_t)
-            self.xm_curve.setData(self.graph_time, self.graph_xm)
-            self.ym_curve.setData(self.graph_time, self.graph_ym)
-            self.xym_curve.setData(self.graph_xm, self.graph_ym)
+    def update_graph(self):
+        self.xm_curve.setData(self.graph_time, self.graph_xm)
+        self.ym_curve.setData(self.graph_time, self.graph_ym)
+        self.xym_curve.setData(self.graph_xm, self.graph_ym)
 
-            self.xg_curve.setData(self.graph_time, self.graph_xg)
-            self.yg_curve.setData(self.graph_time, self.graph_yg)
+        self.xg_curve.setData(self.graph_time, self.graph_xg)
+        self.yg_curve.setData(self.graph_time, self.graph_yg)
 
-            self.xyr_curve.setData(self.graph_xr, self.graph_yr)
+        self.xyr_curve.setData(self.graph_xr, self.graph_yr)
 
-            self.xy_sight_left_curve.setData(self.graph_x_sight_left, self.graph_y_sight_left)
-            self.xy_sight_right_curve.setData(self.graph_x_sight_right, self.graph_y_sight_right)
+        self.xy_sight_left_curve.setData(self.graph_x_sight_left, self.graph_y_sight_left)
+        self.xy_sight_right_curve.setData(self.graph_x_sight_right, self.graph_y_sight_right)
 
-            self.x_graph.setAxisScale(2, self.graph_time[0], self.graph_time[-1])
-            self.y_graph.setAxisScale(2, self.graph_time[0], self.graph_time[-1])
-
-            self.x_graph.replot()
-            self.y_graph.replot()
-            self.xy_graph.replot()
+        # self.x_graph.setAxisScale(2, self.graph_time[0], self.graph_time[-1])
+        # self.y_graph.setAxisScale(2, self.graph_time[0], self.graph_time[-1])
 
 
 def main():
     app = QApplication(sys.argv)
     w = Window()
-    q_loop = qasync.QEventLoop(app)
-    asyncio.set_event_loop(q_loop)
-    asyncio.ensure_future(w.update_graph())
-    asyncio.ensure_future(w.timer())
-    asyncio.get_event_loop().run_forever()
+    w.show()
+    exit_code = app.exec()
+    sys.exit(exit_code)
 
 
 if __name__ == '__main__':
