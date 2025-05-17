@@ -79,28 +79,23 @@ class Window(sim_user_interface.UIMainWindow):
 
         self.xym_curve = self.xy_graph.plot(self.graph_xm, self.graph_ym, 'UAV position')
         self.xyr_curve = self.xy_graph.plot(self.graph_xr, self.graph_yr, 'Robot position')
-
         self.xy_sight_left_curve = self.xy_graph.plot(self.graph_x_sight_left, self.graph_y_sight_left)
         self.xy_sight_right_curve = self.xy_graph.plot(self.graph_x_sight_right, self.graph_y_sight_right)
 
-        self.xm_curve.setData(self.graph_time, self.graph_xm)
+        self.uav_m_pos = self.xy_graph.plot([self.uav.position.x], [self.uav.position.y], symbol='o')
+        self.uav_m_pos.setPen(QPen(QtGui.QColorConstants.Green, 0, QtCore.Qt.PenStyle.SolidLine))
+        self.uav_g_pos = self.xy_graph.plot([self.graph_xg[-1]], [self.graph_yg[-1]], symbol='+')
+        self.uav_g_pos.setPen(QPen(QtGui.QColorConstants.White, 0, QtCore.Qt.PenStyle.DotLine))
+        self.robot_pos = self.xy_graph.plot([self.robot.position.x], [self.robot.position.y], symbol='x')
+        self.robot_pos.setPen(QPen(QtGui.QColorConstants.Red, 0, QtCore.Qt.PenStyle.DashLine))
+
         self.xm_curve.setPen(QPen(QtGui.QColorConstants.Green, 0, QtCore.Qt.PenStyle.SolidLine))
-        self.ym_curve.setData(self.graph_time, self.graph_ym)
         self.ym_curve.setPen(QPen(QtGui.QColorConstants.Green, 0, QtCore.Qt.PenStyle.SolidLine))
-        self.xym_curve.setData(self.graph_xm, self.graph_ym)
         self.xym_curve.setPen(QPen(QtGui.QColorConstants.Green, 0, QtCore.Qt.PenStyle.SolidLine))
-
-        self.xg_curve.setData(self.graph_time, self.graph_xg)
-        self.xg_curve.setPen(QPen(QtGui.QColorConstants.Blue, 0, QtCore.Qt.PenStyle.DotLine))
-        self.yg_curve.setData(self.graph_time, self.graph_yg)
-        self.yg_curve.setPen(QPen(QtGui.QColorConstants.Blue, 0, QtCore.Qt.PenStyle.DotLine))
-
-        self.xyr_curve.setData(self.graph_xr, self.graph_yr)
+        self.xg_curve.setPen(QPen(QtGui.QColorConstants.White, 0, QtCore.Qt.PenStyle.DotLine))
+        self.yg_curve.setPen(QPen(QtGui.QColorConstants.White, 0, QtCore.Qt.PenStyle.DotLine))
         self.xyr_curve.setPen(QPen(QtGui.QColorConstants.Red, 0, QtCore.Qt.PenStyle.DashLine))
-
-        self.xy_sight_left_curve.setData(self.graph_x_sight_left, self.graph_y_sight_left)
         self.xy_sight_left_curve.setPen(QPen(QtGui.QColorConstants.DarkGreen, 0, QtCore.Qt.PenStyle.DashDotLine))
-        self.xy_sight_right_curve.setData(self.graph_x_sight_right, self.graph_y_sight_right)
         self.xy_sight_right_curve.setPen(QPen(QtGui.QColorConstants.DarkGreen, 0, QtCore.Qt.PenStyle.DashDotLine))
 
         self.timer = QtCore.QTimer()
@@ -141,8 +136,9 @@ class Window(sim_user_interface.UIMainWindow):
         self.xy_graph.setTitle('X (m) vs Y (m)')
         self.xy_graph.setLabel('bottom', 'X (m)')
         self.xy_graph.setLabel('left', 'Y (m)')
-        self.xy_graph.setXRange(-1.5, 1.5)
-        self.xy_graph.setYRange(-1.5, 1.5)
+        self.xy_graph.setXRange(-1, 1)
+        self.xy_graph.setYRange(-1, 1)
+        self.xy_graph.setAspectLocked(True)
         self.xy_graph.showGrid(x=True, y=True)
         self.xy_graph.addLegend()
 
@@ -286,13 +282,13 @@ class Window(sim_user_interface.UIMainWindow):
             self.graph_yg.append(yg)
 
             self.graph_x_sight_left = [self.uav.position.x,
-                                       self.uav.position.x + 1 * numpy.cos((self.uav.yaw + 20) * numpy.pi / 180)]
+                                       self.uav.position.x + 0.5 * numpy.cos((self.uav.yaw + 20) * numpy.pi / 180)]
             self.graph_y_sight_left = [self.uav.position.y,
-                                       self.uav.position.y + 1 * numpy.sin((self.uav.yaw + 20) * numpy.pi / 180)]
+                                       self.uav.position.y + 0.5 * numpy.sin((self.uav.yaw + 20) * numpy.pi / 180)]
             self.graph_x_sight_right = [self.uav.position.x,
-                                        self.uav.position.x + 1 * numpy.cos((self.uav.yaw - 20) * numpy.pi / 180)]
+                                        self.uav.position.x + 0.5 * numpy.cos((self.uav.yaw - 20) * numpy.pi / 180)]
             self.graph_y_sight_right = [self.uav.position.y,
-                                        self.uav.position.y + 1 * numpy.sin((self.uav.yaw - 20) * numpy.pi / 180)]
+                                        self.uav.position.y + 0.5 * numpy.sin((self.uav.yaw - 20) * numpy.pi / 180)]
 
             self.graph_time = self.graph_time[1:]
             self.graph_time.append(self.uav.timestamp)
@@ -310,13 +306,15 @@ class Window(sim_user_interface.UIMainWindow):
     def update_graph(self):
         self.xm_curve.setData(self.graph_time, self.graph_xm)
         self.ym_curve.setData(self.graph_time, self.graph_ym)
-        self.xym_curve.setData(self.graph_xm, self.graph_ym)
 
         self.xg_curve.setData(self.graph_time, self.graph_xg)
         self.yg_curve.setData(self.graph_time, self.graph_yg)
 
+        self.xym_curve.setData(self.graph_xm, self.graph_ym)
         self.xyr_curve.setData(self.graph_xr, self.graph_yr)
-
+        self.uav_m_pos.setData([self.graph_xm[-1]], [self.graph_ym[-1]])
+        self.uav_g_pos.setData([self.graph_xg[-1]], [self.graph_yg[-1]])
+        self.robot_pos.setData([self.graph_xr[-1]], [self.graph_yr[-1]])
         self.xy_sight_left_curve.setData(self.graph_x_sight_left, self.graph_y_sight_left)
         self.xy_sight_right_curve.setData(self.graph_x_sight_right, self.graph_y_sight_right)
 
