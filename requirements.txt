@@ -1,8 +1,7 @@
-cflib==0.1.21
-qtm==2.0.6
+cflib==0.1.28
+qtm_rt==3.0.2
 numpy==1.24.1
 pynput==1.7.6
-PyQt5==5.15.7
-PyQt5-stubs==5.15.6.0
-PythonQwt==0.10.2
-qasync==0.23.0
+PySide6==6.9.0
+pyqtgraph==0.13.7
+quamash==0.6.1
