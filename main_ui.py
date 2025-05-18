@@ -1,6 +1,7 @@
 import gui
 import numpy
 import sys
+import qtm_rt
 
 from PySide6 import QtCore
 from PySide6.QtGui import QPen, QColorConstants
@@ -26,7 +27,7 @@ class GraphicRepresentation:
             color = QPen(QColorConstants.Red, 0, QtCore.Qt.PenStyle.SolidLine)
 
         self.marker = None
-        self.marker_gr = self.plot_widget.plot([0], [0], symbol="x", name=self.name)
+        self.marker_gr = self.plot_widget.plot([0], [0], symbol="x", name=self.name, pen=color)
         self.curve = self.plot_widget.plot([0], [0], pen=color)
         self.enabled = 0
         self.radio_button = radio_button
@@ -64,7 +65,12 @@ class QtmMarkersGR:
         del self
 
 class Window(gui.UiMainWindow):
-    def __init__(self, parent=None, uavs: List[Agent] = None, robot: Robot = None, parameters_filename=None):
+    def __init__(self,
+                 parent=None,
+                 uavs: List[Agent] = None,
+                 robot: Robot = None,
+                 parameters_filename=None,
+                 test_mode=False):
         super().__init__(parent)
         self.filename = parameters_filename
         self.uav = None
@@ -90,6 +96,9 @@ class Window(gui.UiMainWindow):
         self.read_parameters_file()
         self.update_combobox()
         self.connect_callbacks()
+        if test_mode:
+            self.init_test()
+            self.test()
         self.show()
 
     def connect_callbacks(self):
@@ -208,8 +217,8 @@ class Window(gui.UiMainWindow):
         with open(self.filename, 'w') as file:
             file.writelines(text)
 
-    def update_graph(self, packet):
-        _, markers = packet.get_3d_markers_no_label()
+    def update_graph(self, markers):
+        # _, markers = packet.get_3d_markers_no_label()
 
         remaining_markers = markers.copy()
         updated_markers = []
@@ -224,9 +233,9 @@ class Window(gui.UiMainWindow):
             self.qtm_markers_gr_list.append(QtmMarkersGR(marker, self.plot))
             updated_markers.append(marker)
 
-        lost_markers = list(set(self.qtm_markers_gr_list) - set(updated_markers))
+        lost_markers = list(set([marker_gr.marker for marker_gr in self.qtm_markers_gr_list]) - set(updated_markers))
         for lost_marker in lost_markers:
-            lost_marker_gr_found = [marker for marker in self.qtm_markers_gr_list if marker.id == lost_marker.id]
+            lost_marker_gr_found = [marker_gr for marker_gr in self.qtm_markers_gr_list if marker_gr.marker.id == lost_marker.id]
             if lost_marker_gr_found:
                 self.qtm_markers_gr_list.remove(lost_marker_gr_found[0])
                 lost_marker_gr_found[0].delete()
@@ -246,13 +255,37 @@ class Window(gui.UiMainWindow):
                 gr.marker = None
             gr.update()
 
+    def init_test(self):
+        number_of_markers = 2
+        self.offline_markers = []
+        for i in range(number_of_markers):
+            self.offline_markers.append(qtm_rt.packet.RT3DMarkerPositionNoLabel(x=numpy.random.randn() * 10**3,
+                                                                                y=numpy.random.randn() * 10**3,
+                                                                                z=0,
+                                                                                id=i))
+
+    def offline_update(self):
+        for i in range(len(self.offline_markers)):
+            marker = self.offline_markers[i]
+            marker = qtm_rt.packet.RT3DMarkerPositionNoLabel(x=marker.x + numpy.random.randn() * 0.1,
+                                                             y=marker.y + numpy.random.randn() * 0.1,
+                                                             z=marker.z,
+                                                             id=marker.id)
+            self.offline_markers[i] = marker
+        self.update_graph(self.offline_markers)
+
+    def test(self):
+        self.timer = QtCore.QTimer()
+        self.timer.setInterval(20)
+        self.timer.timeout.connect(self.offline_update)
+        self.timer.start()
+
 
 if __name__ == '__main__':
     agents_list = init_agents()
     rbt = Robot('Cible')
     app_test = QApplication(sys.argv)
     filename = 'flight_parameters.txt'
-    user_window = Window(uavs=agents_list, robot=rbt, parameters_filename=filename)
-    user_window.show()
+    user_window = Window(uavs=agents_list, robot=rbt, parameters_filename=filename, test_mode=True)
     exit_code = app_test.exec()
     sys.exit(exit_code)
