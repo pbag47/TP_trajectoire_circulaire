@@ -4,15 +4,15 @@ import cflib.crtp
 import csv
 import logging
 import pynput.keyboard
-import qasync
 import qtm_tools
 import sys
 
 from joystick_class import Joystick
 from main_ui import Window
-from PyQt5.QtWidgets import QApplication
-from qtm import QRTConnection
-from qtm.packet import QRTPacket
+from PySide6.QtWidgets import QApplication
+from quamash import QSelectorEventLoop
+from qtm_rt import QRTConnection
+from qtm_rt.packet import QRTPacket
 from robot_class import Robot
 from swarm_object_class import SwarmObject
 
@@ -96,12 +96,12 @@ def main():
     logger.setLevel(logging.INFO)
 
     # -- User interface setup ---------------------------------------------------- #
-    app_test = QApplication(sys.argv)
+    settings_app = QApplication(sys.argv)
     user_window = Window(uavs=agents_list, robot=rbt, parameters_filename='flight_parameters.txt')
 
     # -- Asyncio loop setup ------------------------------------------------------ #
-    q_loop = qasync.QEventLoop(app_test)
-    asyncio.set_event_loop(q_loop)
+    event_loop = QSelectorEventLoop(settings_app)
+    asyncio.set_event_loop(event_loop)
 
     # -- QTM connection ---------------------------------------------------------- #
     qtm_connection: QRTConnection = asyncio.get_event_loop().run_until_complete(
@@ -110,12 +110,12 @@ def main():
     # -- Asyncio loop run (user interface + QTM streaming) ----------------------- #
     if not qtm_connection:
         logger.warning('QTM not connected, displaying UI in settings-only mode')
-        q_loop.run_forever()
-        return
+        exit_code = settings_app.exec()
+        sys.exit(exit_code)
 
     logger.info('UI real-time processing loop started')
     asyncio.ensure_future(start_qtm_streaming(qtm_connection, user_window.update_graph))
-    q_loop.run_forever()
+    exit_code = settings_app.exec()
     logger.info('UI real-time processing loop stopped')
     asyncio.get_event_loop().run_until_complete(stop_qtm_streaming(qtm_connection))
 
@@ -170,6 +170,8 @@ def main():
 
     if uav.error:
         raise uav.error
+
+    sys.exit(exit_code)
 
 
 if __name__ == '__main__':

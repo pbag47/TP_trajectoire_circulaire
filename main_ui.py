@@ -1,47 +1,40 @@
-import asyncio
 import gui
 import numpy
-import qasync
 import sys
+
+from PySide6 import QtCore
+from PySide6.QtGui import QPen, QColorConstants
+from PySide6.QtWidgets import QApplication
+from typing import List
 
 from agent_class import Agent
 from cf_info import init_agents
-from PyQt5 import QtCore
-from PyQt5.QtGui import QPen
-from PyQt5.QtWidgets import QApplication, QMainWindow
-from qwt import QwtPlot, QwtPlotCurve, QwtPlotMarker, QwtPlotGrid, QwtSymbol
 from robot_class import Robot
-from typing import List, Union
 
 
 class GraphicRepresentation:
-    def __init__(self, vehicle_type: str, vehicle: Union[Agent, Robot], radio_button):
+    def __init__(self, vehicle_type: str, vehicle: Agent | Robot, radio_button, plot_widget):
         self.name = vehicle.name
         self.type = vehicle_type
         self.vehicle = vehicle
+        self.plot_widget = plot_widget
 
-        color = QPen(QtCore.Qt.blue)
+        color = QPen(QColorConstants.Blue, 0, QtCore.Qt.PenStyle.SolidLine)
         if self.type == 'UAV':
-            color = QPen(QtCore.Qt.black)
+            color = QPen(QColorConstants.White, 0, QtCore.Qt.PenStyle.SolidLine)
         elif self.type == 'Robot':
-            color = QPen(QtCore.Qt.red)
+            color = QPen(QColorConstants.Red, 0, QtCore.Qt.PenStyle.SolidLine)
 
         self.marker = None
-        self.marker_gr = QwtPlotMarker(self.name)
-        self.marker_gr.setValue(0, 0)
-        symbol = QwtSymbol(QwtSymbol.XCross)
-        symbol.setSize(10, 10)
-        self.marker_gr.setSymbol(symbol)
-        self.curve = QwtPlotCurve(self.name + ' radius')
-        self.curve.setPen(color)
-        self.curve.setStyle(QwtPlotCurve.Lines)
+        self.marker_gr = self.plot_widget.plot([0], [0], symbol="x", name=self.name)
+        self.curve = self.plot_widget.plot([0], [0], pen=color)
         self.enabled = 0
         self.radio_button = radio_button
         self.update()
 
     def update(self):
         if self.enabled:
-            self.marker_gr.setValue(self.vehicle.initial_position[0], self.vehicle.initial_position[1])
+            self.marker_gr.setData([self.vehicle.initial_position[0]], [self.vehicle.initial_position[1]])
             self.marker_gr.setVisible(True)
             if self.marker:
                 self.curve.setData([self.vehicle.initial_position[0], self.marker.x * 10 ** -3],
@@ -55,37 +48,35 @@ class GraphicRepresentation:
 
 
 class QtmMarkersGR:
-    def __init__(self, qtm_marker):
+    def __init__(self, qtm_marker, plot_widget):
         self.marker = qtm_marker
-        self.gr = QwtPlotMarker(str(qtm_marker.id))
-        symbol = QwtSymbol(QwtSymbol.Ellipse)
-        symbol.setSize(10, 10)
-        self.gr.setSymbol(symbol)
-        self.gr.setValue(self.marker.x * 10 ** -3, self.marker.y * 10 ** -3)
+        self.plot_widget = plot_widget
+        self.gr = self.plot_widget.plot([self.marker.x * 10 ** -3], [self.marker.y * 10 ** -3],
+                                        name=str(self.marker.id),
+                                        symbol="o")
 
-    def erase(self):
-        self.gr.detach()
+    def update(self, qtm_marker):
+        self.marker = qtm_marker
+        self.gr.setData([self.marker.x * 10 ** -3], [self.marker.y * 10 ** -3])
+
+    def delete(self):
+        self.plot_widget.removeItem(self.gr)
         del self
 
-
-class Window(QMainWindow, gui.UiMainWindow):
+class Window(gui.UiMainWindow):
     def __init__(self, parent=None, uavs: List[Agent] = None, robot: Robot = None, parameters_filename=None):
         super().__init__(parent)
         self.filename = parameters_filename
-        self.setup_ui(self)
         self.uav = None
         self.robot = None
         self.qtm_markers_gr_list = []
 
-        grid = QwtPlotGrid()
-        grid.setPen(QPen(QtCore.Qt.black, 0, QtCore.Qt.DotLine))
-        grid.attach(self.plot)
-
+        self.plot.showGrid(x=True, y=True)
         self.plot.setTitle('Initial position visualizer')
-        self.plot.setAxisTitle(QwtPlot.xBottom, 'X (m)')
-        self.plot.setAxisTitle(QwtPlot.yLeft, 'Y (m)')
-        self.plot.setAxisScale(QwtPlot.xBottom, -2, 2, 0.50)
-        self.plot.setAxisScale(QwtPlot.yLeft, -2, 2, 0.50)
+        self.plot.setLabel('bottom', 'X (m)')
+        self.plot.setLabel('left', 'Y (m)')
+        self.plot.setXRange(-2, 2, 0.50)
+        self.plot.setYRange(-2, 2, 0.50)
 
         self.series = []
         self.enabled_cf_radio_button_list = [self.cb_cf1, self.cb_cf2, self.cb_cf3, self.cb_cf4, self.cb_cf5,
@@ -93,12 +84,8 @@ class Window(QMainWindow, gui.UiMainWindow):
         for uav in uavs:
             rb = [radio_button for radio_button in self.enabled_cf_radio_button_list if
                   radio_button.objectName().endswith(uav.name)]
-            self.series.append(GraphicRepresentation('UAV', uav, rb[0]))
-        self.series.append(GraphicRepresentation('Robot', robot, self.cb_robot))
-        for gr in self.series:
-            gr.marker_gr.attach(self.plot)
-            gr.curve.attach(self.plot)
-
+            self.series.append(GraphicRepresentation('UAV', uav, rb[0], plot_widget=self.plot))
+        self.series.append(GraphicRepresentation('Robot', robot, self.cb_robot, plot_widget=self.plot))
         self.selected_gr = []
         self.read_parameters_file()
         self.update_combobox()
@@ -224,14 +211,25 @@ class Window(QMainWindow, gui.UiMainWindow):
     def update_graph(self, packet):
         _, markers = packet.get_3d_markers_no_label()
 
+        remaining_markers = markers.copy()
+        updated_markers = []
         for qtm_gr in self.qtm_markers_gr_list:
-            qtm_gr.erase()
+            updated_marker_found = [marker for marker in markers if marker.id == qtm_gr.marker.id]
+            if updated_marker_found:
+                qtm_gr.update(updated_marker_found[0])
+                remaining_markers.remove(updated_marker_found[0])
+                updated_markers.append(updated_marker_found[0])
 
-        self.qtm_markers_gr_list = []
-        for marker in markers:
-            qtm_gr = QtmMarkersGR(marker)
-            qtm_gr.gr.attach(self.plot)
-            self.qtm_markers_gr_list.append(qtm_gr)
+        for marker in remaining_markers:
+            self.qtm_markers_gr_list.append(QtmMarkersGR(marker, self.plot))
+            updated_markers.append(marker)
+
+        lost_markers = list(set(self.qtm_markers_gr_list) - set(updated_markers))
+        for lost_marker in lost_markers:
+            lost_marker_gr_found = [marker for marker in self.qtm_markers_gr_list if marker.id == lost_marker.id]
+            if lost_marker_gr_found:
+                self.qtm_markers_gr_list.remove(lost_marker_gr_found[0])
+                lost_marker_gr_found[0].delete()
 
         # For each enabled UAV, finds the nearest QTM marker
         for gr in self.series:
@@ -248,15 +246,13 @@ class Window(QMainWindow, gui.UiMainWindow):
                 gr.marker = None
             gr.update()
 
-        self.plot.replot()
-
 
 if __name__ == '__main__':
     agents_list = init_agents()
     rbt = Robot('Cible')
     app_test = QApplication(sys.argv)
     filename = 'flight_parameters.txt'
-    User_window = Window(uavs=agents_list, robot=rbt, parameters_filename=filename)
-    q_loop = qasync.QEventLoop(app_test)
-    asyncio.set_event_loop(q_loop)
-    q_loop.run_forever()
+    user_window = Window(uavs=agents_list, robot=rbt, parameters_filename=filename)
+    user_window.show()
+    exit_code = app_test.exec()
+    sys.exit(exit_code)
