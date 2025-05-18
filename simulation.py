@@ -26,6 +26,10 @@ from robot_class import Robot
 class Window(sim_user_interface.UIMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.x_graph.addLegend()
+        self.y_graph.addLegend()
+        self.xy_graph.addLegend()
+
         self.stopped = False
         self.psi = 0                                # (°)
         self.delta_t = 0.02                         # (s)
@@ -71,14 +75,14 @@ class Window(sim_user_interface.UIMainWindow):
         self.graph_x_sight_right = [0.0, 0.0]
         self.graph_y_sight_right = [0.0, 0.0]
 
-        self.xm_curve = self.x_graph.plot(self.graph_time, self.graph_xm, 'Measured x')
-        self.ym_curve = self.y_graph.plot(self.graph_time, self.graph_ym, 'Measured y')
+        self.xm_curve = self.x_graph.plot(self.graph_time, self.graph_xm, name='Measured x')
+        self.ym_curve = self.y_graph.plot(self.graph_time, self.graph_ym, name='Measured y')
 
-        self.xg_curve = self.x_graph.plot(self.graph_time, self.graph_xg, 'Targeted x')
-        self.yg_curve = self.y_graph.plot(self.graph_time, self.graph_yg, 'Targeted y')
+        self.xg_curve = self.x_graph.plot(self.graph_time, self.graph_xg, name='Targeted x')
+        self.yg_curve = self.y_graph.plot(self.graph_time, self.graph_yg, name='Targeted y')
 
-        self.xym_curve = self.xy_graph.plot(self.graph_xm, self.graph_ym, 'UAV position')
-        self.xyr_curve = self.xy_graph.plot(self.graph_xr, self.graph_yr, 'Robot position')
+        self.xym_curve = self.xy_graph.plot(self.graph_xm, self.graph_ym, name='UAV position')
+        self.xyr_curve = self.xy_graph.plot(self.graph_xr, self.graph_yr, name='Robot position')
         self.xy_sight_left_curve = self.xy_graph.plot(self.graph_x_sight_left, self.graph_y_sight_left)
         self.xy_sight_right_curve = self.xy_graph.plot(self.graph_x_sight_right, self.graph_y_sight_right)
 
@@ -125,13 +129,11 @@ class Window(sim_user_interface.UIMainWindow):
         self.x_graph.setLabel('bottom', 'Time (s)')
         self.x_graph.setLabel('left', 'X (m)')
         self.x_graph.setYRange(-1.25, 1.25)
-        self.x_graph.addLegend()
 
         self.y_graph.setTitle('Y (m) vs time (s)')
         self.y_graph.setLabel('bottom', 'Time (s)')
         self.y_graph.setLabel('left', 'Y (m)')
         self.y_graph.setYRange(-1.25, 1.25)
-        self.y_graph.addLegend()
 
         self.xy_graph.setTitle('X (m) vs Y (m)')
         self.xy_graph.setLabel('bottom', 'X (m)')
@@ -140,7 +142,6 @@ class Window(sim_user_interface.UIMainWindow):
         self.xy_graph.setYRange(-1, 1)
         self.xy_graph.setAspectLocked(True)
         self.xy_graph.showGrid(x=True, y=True)
-        self.xy_graph.addLegend()
 
     def stop_button_callback(self):
         self.stopped = True
