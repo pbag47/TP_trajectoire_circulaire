@@ -7,14 +7,17 @@ import pynput.keyboard
 import qtm_tools
 import sys
 
-from joystick_class import Joystick
-from main_ui import Window
 from PySide6.QtWidgets import QApplication
+from PySide6 import QtAsyncio
 from quamash import QSelectorEventLoop
 from qtm_rt import QRTConnection
 from qtm_rt.packet import QRTPacket
+
+from joystick_class import Joystick
+from main_ui import Window
 from robot_class import Robot
 from swarm_object_class import SwarmObject
+from UI.SetupUI import SetupUI
 
 
 logger = logging.getLogger(__name__)
@@ -96,8 +99,16 @@ def main():
     logger.setLevel(logging.INFO)
 
     # -- User interface setup ---------------------------------------------------- #
-    settings_app = QApplication(sys.argv)
-    user_window = Window(uavs=agents_list, robot=rbt, parameters_filename='flight_parameters.txt')
+    settings_app = QApplication([])
+    setup_ui = SetupUI(list_of_agents=agents_list,
+                       robot=rbt,
+                       parameters_filename='flight_parameters.txt')
+    setup_ui.show()
+    exit_code = settings_app.exec()
+
+
+    # settings_app = QApplication(sys.argv)
+    # user_window = Window(uavs=agents_list, robot=rbt, parameters_filename='flight_parameters.txt')
 
     # -- Asyncio loop setup ------------------------------------------------------ #
     event_loop = QSelectorEventLoop(settings_app)

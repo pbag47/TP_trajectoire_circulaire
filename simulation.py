@@ -1,26 +1,17 @@
-# import asyncio
 import csv
 import numpy
-# import qasync
-# import qwt
 import sim_user_interface
 import sys
-from _CORRIGE_uav_control_law import circle, circle_tangent_x_axis, point_of_interest, control_law
 
-from agent_class import Agent
 from PySide6 import QtCore, QtGui
 from PySide6.QtGui import QPen
 from PySide6.QtWidgets import QApplication
 from qtm_rt.packet import RT3DMarkerPositionNoLabel
 
-# from PyQt5 import QtCore
-# from PyQt5.QtGui import QPen
-# from PyQt5.QtWidgets import QApplication, QMainWindow
-# from qwt import QwtPlotCurve, QwtPlotGrid
-# from qtm.packet import RT3DMarkerPositionNoLabel
-
+from agent_class import Agent
 from flight_state_class import FlightState
 from robot_class import Robot
+from _CORRIGE_uav_control_law import circle, circle_tangent_x_axis, point_of_interest, control_law
 
 
 class Window(sim_user_interface.UIMainWindow):
