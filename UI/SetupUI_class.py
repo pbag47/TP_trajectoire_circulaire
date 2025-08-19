@@ -60,6 +60,7 @@ class SetupUI(QtWidgets.QWidget):
         self.main_layout.addLayout(self.robot_selection_layout, 2, 0)
         self.main_layout.addWidget(self.validate_button, 2, 1)
         self.connect_callbacks()
+        self.update_vehicle_choice_combobox()
 
     def setup_xy_plot(self):
         self.xy_plot.showGrid(x=True, y=True)
@@ -105,6 +106,7 @@ class SetupUI(QtWidgets.QWidget):
             if vehicle_marker.vehicle_type == 'UAV':
                 radio_button = QtWidgets.QRadioButton(self)
                 radio_button.setText(vehicle_marker.name)
+                radio_button.setChecked(vehicle_marker.enabled)
                 self.cf_selection_radiobuttons.append(radio_button)
                 self.cf_selection_layout.addWidget(radio_button, cf_row_count, cf_column_count)
                 cf_column_count += 1
@@ -114,6 +116,7 @@ class SetupUI(QtWidgets.QWidget):
             if vehicle_marker.vehicle_type == 'Robot':
                 check_box = QtWidgets.QCheckBox(self)
                 check_box.setText(vehicle_marker.name)
+                check_box.setChecked(vehicle_marker.enabled)
                 self.robot_selection_checkboxes.append(check_box)
                 self.robot_selection_layout.addWidget(check_box, rbt_row_count, rbt_column_count)
                 rbt_column_count += 1
