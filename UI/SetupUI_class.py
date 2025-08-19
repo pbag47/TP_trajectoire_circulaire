@@ -226,7 +226,7 @@ class SetupUI(QtWidgets.QWidget):
             line += str(vehicle.init_y) + ', '
             line += str(vehicle.init_z) + ', '
             line += str(vehicle.takeoff_z) + ', '
-            line += str(vehicle.enabled) + ' \n'
+            line += str(int(vehicle.enabled)) + ' \n'
             text.append(line)
         with open(self.parameters_filename, 'w') as file:
             file.writelines(text)
