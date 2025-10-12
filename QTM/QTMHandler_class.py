@@ -2,6 +2,7 @@ import logging
 import qtm_rt
 
 import math_tools
+
 from QTM.QTMConnection_class import QTMConnection
 from QTM.QTMVirtualConnection_class import QTMVirtualConnection
 from QTM.QTMVirtualMeasure_class import QTMVirtualMeasure

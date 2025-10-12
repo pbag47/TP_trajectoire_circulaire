@@ -44,15 +44,15 @@ class SetupUI(QtWidgets.QWidget):
         self.takeoff_z_label = QtWidgets.QLabel(self)
         self.takeoff_z_spinbox = QtWidgets.QDoubleSpinBox(self)
 
-        self.cf_selection_radiobuttons = []
-        self.robot_selection_checkboxes = []
+        self.cf_selection_radiobuttons: list[QtWidgets.QRadioButton] = []
+        self.robot_selection_checkboxes: list[QtWidgets.QCheckBox] = []
 
         self.simulation_toggle = ToggleButton(self)
         self.validate_button = QtWidgets.QCommandLinkButton(self)
 
         self.setup()
         self.qtm_handler.connection.qtm_measure.set_vehicles_list(self.vehicle_markers)
-        self.qtm_handler.connection.packet_received.connect(self.update_graph)
+        self.qtm_handler.connection.on_packet = self.update_graph
         self.start_qtm()
 
     def start_qtm(self):
@@ -153,7 +153,7 @@ class SetupUI(QtWidgets.QWidget):
     def connect_callbacks(self):
         self.vehicle_choice_combobox.currentIndexChanged.connect(self.vehicle_choice_callback)
         for radiobutton in self.cf_selection_radiobuttons:
-            radiobutton.toggled.connect(self.vehicle_enabled_callback)
+            radiobutton.clicked.connect(self.vehicle_enabled_callback)
         for checkbox in self.robot_selection_checkboxes:
             checkbox.clicked.connect(self.vehicle_enabled_callback)
         self.initial_x_spinbox.valueChanged.connect(self.x_changed_callback)
@@ -163,6 +163,7 @@ class SetupUI(QtWidgets.QWidget):
         self.simulation_toggle.clicked.connect(self.simulation_toggle_callback)
         self.validate_button.clicked.connect(self.submit_callback)
 
+    @QtCore.Slot()
     def vehicle_enabled_callback(self):
         for radiobutton in self.cf_selection_radiobuttons:
             vehicle_marker = [vehicle for vehicle in self.vehicle_markers if vehicle.name == radiobutton.text()][0]
@@ -172,48 +173,64 @@ class SetupUI(QtWidgets.QWidget):
             vehicle_marker.enabled = checkbox.isChecked()
         self.update_vehicle_choice_combobox()
 
+    @QtCore.Slot()
     def x_changed_callback(self):
-        self.selected_vehicle.init_x = self.initial_x_spinbox.value()
+        self.selected_vehicle._actual_state.position = qtm_rt.packet.RT3DMarkerPositionNoLabel(
+            x=self.initial_x_spinbox.value(),
+            y=self.selected_vehicle._actual_state.position.y,
+            z=self.selected_vehicle._actual_state.position.z,
+            id=self.selected_vehicle._actual_state.position.id
+        )
 
     def y_changed_callback(self):
-        self.selected_vehicle.init_y = self.initial_y_spinbox.value()
+        self.selected_vehicle._actual_state.position = qtm_rt.packet.RT3DMarkerPositionNoLabel(
+            x=self.selected_vehicle._actual_state.position.x,
+            y=self.initial_y_spinbox.value(),
+            z=self.selected_vehicle._actual_state.position.z,
+            id=self.selected_vehicle._actual_state.position.id
+        )
 
     def z_changed_callback(self):
-        self.selected_vehicle.init_z = self.initial_z_spinbox.value()
+        self.selected_vehicle._actual_state.position = qtm_rt.packet.RT3DMarkerPositionNoLabel(
+            x=self.selected_vehicle._actual_state.position.x,
+            y=self.selected_vehicle._actual_state.position.y,
+            z=self.initial_z_spinbox.value(),
+            id=self.selected_vehicle._actual_state.position.id
+        )
 
+    @QtCore.Slot()
     def z_takeoff_changed_callback(self):
         self.selected_vehicle.takeoff_z = self.takeoff_z_spinbox.value()
 
+    @QtCore.Slot()
     def simulation_toggle_callback(self):
-        self.qtm_handler.connection.packet_received.disconnect(self.update_graph)
         self.stop_qtm()
         if self.simulation_toggle.isChecked():
             print("Real")
-            self.qtm_handler.connection = QTMConnection()
+            self.qtm_handler.connection = QTMConnection(on_packet=self.update_graph)
         else:
             print("Simulation")
-            self.qtm_handler.connection = QTMVirtualConnection()
+            self.qtm_handler.connection = QTMVirtualConnection(on_packet=self.update_graph)
             self.qtm_handler.connection.qtm_measure.set_vehicles_list(self.vehicle_markers)
-        self.qtm_handler.connection.packet_received.connect(self.update_graph)
         self.start_qtm()
 
-    def vehicle_choice_callback(self, index):
+    @QtCore.Slot(int)
+    def vehicle_choice_callback(self, index: int):
         possible_choices = [vehicle for vehicle in self.vehicle_markers if vehicle.enabled]
         self.selected_vehicle = possible_choices[index]
         self.update_settings_widgets()
 
+    @QtCore.Slot()
     def submit_callback(self):
         self.update_parameters_file()
         self.close()
 
+    @QtCore.Slot()
     def update_vehicle_choice_combobox(self):
         names = [vehicle.name for vehicle in self.vehicle_markers if vehicle.enabled]
         self.vehicle_choice_combobox.clear()
         if names:
             self.vehicle_choice_combobox.addItems(names)
-            if not self.selected_vehicle:
-                self.vehicle_choice_callback(index=0)
-            self.update_settings_widgets()
 
     def update_settings_widgets(self):
         if self.selected_vehicle.vehicle_type == 'UAV':
@@ -228,9 +245,7 @@ class SetupUI(QtWidgets.QWidget):
         self.initial_y_spinbox.setValue(initial_state.position.y)
         self.initial_z_spinbox.setValue(initial_state.position.z)
 
-    @QtCore.Slot(list, float)
     def update_graph(self, markers, _):
-        print("Update graph")
         self.find_nearest_markers(self.vehicle_markers, markers)
         for vehicle_representation in self.vehicle_markers:
             vehicle_representation.update()

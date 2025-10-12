@@ -3,14 +3,18 @@ import logging
 import sys
 
 from PySide6.QtWidgets import QApplication, QPushButton
+from typing import Callable
 
 from QTM.QTMConnection_class import QTMConnection
 from QTM.QTMVirtualMeasure_class import QTMVirtualMeasure
 
 
 class QTMVirtualConnection(QTMConnection):
-    def __init__(self, qtm_virtual_measure: QTMVirtualMeasure | None = None):
-        super().__init__(ip_address="Unused IP address", parent=None)
+    def __init__(self,
+                 qtm_virtual_measure: QTMVirtualMeasure | None = None,
+                 on_packet: Callable | None = None,
+                 ):
+        super().__init__(ip_address="Unused IP address", on_packet=on_packet)
         if qtm_virtual_measure is None:
             qtm_virtual_measure = QTMVirtualMeasure()
         self.qtm_measure = qtm_virtual_measure
@@ -19,10 +23,13 @@ class QTMVirtualConnection(QTMConnection):
         self.connection = True
 
     async def _disconnect_qtm(self):
+        await self._stop_qtm_streaming()
         self.connection = None
+        self._logger.info('QTM disconnected')
 
     def _virtual_packet_received_callback(self, _, markers, timestamp):
-        self.packet_received.emit(markers, timestamp)
+        if self.on_packet:
+            self.on_packet(markers, timestamp)
 
     async def _start_qtm_streaming(self):
         """ Starts a QTM stream, and assigns a callback method to run each time a QRTPacket is received from QTM

@@ -1,26 +1,26 @@
 
 import asyncio
 import logging
-import sys
-
 import qtm_rt
 import threading
+import time
+import sys
 
-from PySide6.QtCore import Signal, Slot, QObject
+from PySide6.QtCore import Slot
 from PySide6 import QtWidgets
 from queue import SimpleQueue
 from _queue import Empty
 from typing import Callable
 
 
-class QTMConnection(QObject):
-
-    packet_received = Signal(list, float)
-
-    def __init__(self, ip_address: str = '192.168.0.1', parent= None):
-        super().__init__(parent)
+class QTMConnection:
+    def __init__(self,
+                 ip_address: str = '192.168.0.1',
+                 on_packet: Callable | None = None,
+                 ):
         self._logger = logging.getLogger(self.__class__.__name__)
         self.ip_address: str = ip_address
+        self.on_packet: Callable | None = on_packet
         self.connection: qtm_rt.QRTConnection | bool | None = None
         self.busy = threading.Event()
         self.stop_flag = threading.Event()
@@ -52,31 +52,13 @@ class QTMConnection(QObject):
         self.add_task(self._disconnect_qtm)
         self.stop_flag.set()
 
-    # def get_single_frame(self):
-    #     frame: qtm_rt.QRTPacket = asyncio.run(
-    #         self.connection.get_current_frame(
-    #             components=['3dnolabels'],
-    #         ),
-    #     )
-
-    # def get_single_frame_backup(self):
-    #     """
-    #     Gets a single frame (the most recent) from QTM and extracts data from the received packet
-    #     """
-    #     frame: qtm_rt.QRTPacket = asyncio.get_event_loop().run_until_complete(
-    #         self.connection.get_current_frame(components=['3dnolabels']))
-    #     timestamp = frame.timestamp * 10 ** -6
-    #     headers, markers = frame.get_3d_markers_no_label()
-    #     for marker in markers:
-    #         self.convert_marker_units(marker)
-    #     return headers, markers, timestamp
-
     def _packet_received_callback(self, packet: qtm_rt.QRTPacket):
         timestamp = packet.timestamp * 10**-6
         headers, markers = packet.get_3d_markers_no_label()
         for marker in markers:
             self.convert_marker_units(marker)
-        self.packet_received.emit(markers, timestamp)
+        if self.on_packet:
+            self.on_packet(markers, timestamp)
 
     @staticmethod
     def convert_marker_units(marker: qtm_rt.packet.RT3DMarkerPositionNoLabel):
@@ -119,7 +101,8 @@ class QTMConnection(QObject):
 
     def _main(self):
         self._logger.info(self.thread.name + ' started')
-        while not self.stop_flag.is_set():
+        while (not self.stop_flag.is_set()) or self.busy.is_set():
+            time.sleep(0.25)
             try:
                 method, args, kwargs = self.stack.get_nowait()
             except Empty:
