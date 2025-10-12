@@ -51,6 +51,7 @@ class QTMConnection:
         self.add_task(self._stop_qtm_streaming)
         self.add_task(self._disconnect_qtm)
         self.stop_flag.set()
+        self.thread.join(timeout=5)
 
     def _packet_received_callback(self, packet: qtm_rt.QRTPacket):
         timestamp = packet.timestamp * 10**-6

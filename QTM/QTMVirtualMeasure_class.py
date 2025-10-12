@@ -15,7 +15,7 @@ class QTMVirtualMeasure:
     def __init__(self,
                  vehicles: list[Vehicle | VehicleRepresentation] | None = None,
                  standard_deviation: float = 0.005,
-                 refresh_rate: int = 1,  # Hz  (25)
+                 refresh_rate: int = 25,  # Hz  (25)
                  ):
         self._logger = logging.getLogger(self.__class__.__name__)
         if vehicles is None:
@@ -66,3 +66,4 @@ class QTMVirtualMeasure:
     async def stream_frames_stop(self):
         self._logger.info("QTM stream stop request")
         self.stop_flag.set()
+        self.thread.join(timeout=5)
