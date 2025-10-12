@@ -1,19 +1,27 @@
+
 import os.path
 import pyqtgraph
+import qtm_rt
 import sys
 
-from PySide6 import QtWidgets, QtGui
+from PySide6 import QtWidgets, QtGui, QtCore
 
-from UI.VehicleMarker_class import VehicleMarker
+import math_tools
+from QTM import QTMHandler
+from QTM.QTMConnection_class import QTMConnection
+from QTM.QTMVirtualConnection_class import QTMVirtualConnection
+from UI.VehicleRepresentation_class import VehicleRepresentation
 from UI.ToggleButton_class import ToggleButton
 
 
 class SetupUI(QtWidgets.QWidget):
     def __init__(self, parameters_filename: str = 'flight_parameters.txt'):
         super().__init__()
-        self.vehicle_markers: list[VehicleMarker] = []
-        self.selected_vehicle: VehicleMarker | None = None
+        self.qtm_handler: QTMHandler = QTMHandler()
+        self.vehicle_markers: list[VehicleRepresentation] = []
+        self.selected_vehicle: VehicleRepresentation | None = None
         self.parameters_filename = parameters_filename
+        self.xy_plot = pyqtgraph.PlotWidget(self)
 
         self.read_parameters_file()
 
@@ -21,8 +29,6 @@ class SetupUI(QtWidgets.QWidget):
         self.cf_selection_layout = QtWidgets.QGridLayout(self)
         self.robot_selection_layout = QtWidgets.QGridLayout(self)
         self.settings_layout = QtWidgets.QFormLayout(self)
-
-        self.xy_plot = pyqtgraph.PlotWidget(self)
 
         self.vehicle_choice_label = QtWidgets.QLabel(self)
         self.vehicle_choice_combobox = QtWidgets.QComboBox(self)
@@ -45,6 +51,17 @@ class SetupUI(QtWidgets.QWidget):
         self.validate_button = QtWidgets.QCommandLinkButton(self)
 
         self.setup()
+        self.qtm_handler.connection.qtm_measure.set_vehicles_list(self.vehicle_markers)
+        self.qtm_handler.connection.packet_received.connect(self.update_graph)
+        self.start_qtm()
+
+    def start_qtm(self):
+        print("Start QTM")
+        self.qtm_handler.connection.start()
+
+    def stop_qtm(self):
+        print("Stop QTM")
+        self.qtm_handler.connection.stop()
 
     def setup(self):
         self.resize(800, 600)
@@ -143,6 +160,7 @@ class SetupUI(QtWidgets.QWidget):
         self.initial_y_spinbox.valueChanged.connect(self.y_changed_callback)
         self.initial_z_spinbox.valueChanged.connect(self.z_changed_callback)
         self.takeoff_z_spinbox.valueChanged.connect(self.z_takeoff_changed_callback)
+        self.simulation_toggle.clicked.connect(self.simulation_toggle_callback)
         self.validate_button.clicked.connect(self.submit_callback)
 
     def vehicle_enabled_callback(self):
@@ -165,6 +183,19 @@ class SetupUI(QtWidgets.QWidget):
 
     def z_takeoff_changed_callback(self):
         self.selected_vehicle.takeoff_z = self.takeoff_z_spinbox.value()
+
+    def simulation_toggle_callback(self):
+        self.qtm_handler.connection.packet_received.disconnect(self.update_graph)
+        self.stop_qtm()
+        if self.simulation_toggle.isChecked():
+            print("Real")
+            self.qtm_handler.connection = QTMConnection()
+        else:
+            print("Simulation")
+            self.qtm_handler.connection = QTMVirtualConnection()
+            self.qtm_handler.connection.qtm_measure.set_vehicles_list(self.vehicle_markers)
+        self.qtm_handler.connection.packet_received.connect(self.update_graph)
+        self.start_qtm()
 
     def vehicle_choice_callback(self, index):
         possible_choices = [vehicle for vehicle in self.vehicle_markers if vehicle.enabled]
@@ -192,9 +223,43 @@ class SetupUI(QtWidgets.QWidget):
         elif self.selected_vehicle.vehicle_type == 'Robot':
             self.takeoff_z_spinbox.setVisible(False)
             self.takeoff_z_label.setVisible(False)
-        self.initial_x_spinbox.setValue(self.selected_vehicle.init_x)
-        self.initial_y_spinbox.setValue(self.selected_vehicle.init_y)
-        self.initial_z_spinbox.setValue(self.selected_vehicle.init_z)
+        initial_state = self.selected_vehicle.get_actual_state()
+        self.initial_x_spinbox.setValue(initial_state.position.x)
+        self.initial_y_spinbox.setValue(initial_state.position.y)
+        self.initial_z_spinbox.setValue(initial_state.position.z)
+
+    @QtCore.Slot(list, float)
+    def update_graph(self, markers, _):
+        print("Update graph")
+        self.find_nearest_markers(self.vehicle_markers, markers)
+        for vehicle_representation in self.vehicle_markers:
+            vehicle_representation.update()
+
+    @staticmethod
+    def find_nearest_markers(
+            vehicle_representations: list[VehicleRepresentation],
+            markers: list[qtm_rt.packet.RT3DMarkerPositionNoLabel],
+            ):
+        pending_markers = markers.copy()
+        for vehicle in vehicle_representations:
+            distances = [math_tools.distance_xy(vehicle.get_actual_state().position, marker) for marker in pending_markers]
+            if not distances:
+                vehicle.measured_state.position = qtm_rt.packet.RT3DMarkerPositionNoLabel(
+                    x=0,
+                    y=0,
+                    z=0,
+                    id=None,
+                )
+                vehicle.actual_matches_measure = False
+                continue
+            min_distance_index = distances.index(min(distances))
+            marker = pending_markers[min_distance_index]
+            vehicle.measured_state.position = marker
+            if distances[min_distance_index] < 0.5:
+                vehicle.actual_matches_measure = True
+            else:
+                vehicle.actual_matches_measure = False
+            pending_markers.remove(marker)
 
     def read_parameters_file(self):
         self.vehicle_markers = []
@@ -202,37 +267,45 @@ class SetupUI(QtWidgets.QWidget):
             _ = file.readline()
             lines = file.readlines()
             for line in lines:
-                vehicle_type, name, init_x, init_y, init_z, takeoff_z, enabled  = [element.strip() for element in line.split(',')]
-                init_x = float(init_x)
-                init_y = float(init_y)
-                init_z = float(init_z)
+                vehicle_type, name, x, y, z, takeoff_z, enabled  = [element.strip() for element in line.split(',')]
+                x = float(x)
+                y = float(y)
+                z = float(z)
                 takeoff_z = float(takeoff_z)
                 enabled = bool(int(enabled))
-                self.vehicle_markers.append(VehicleMarker(vehicle_type=vehicle_type,
-                                                          name=name,
-                                                          init_x=init_x,
-                                                          init_y=init_y,
-                                                          init_z=init_z,
-                                                          takeoff_z=takeoff_z,
-                                                          enabled=enabled)
-                                            )
+                self.vehicle_markers.append(
+                    VehicleRepresentation(
+                        vehicle_type=vehicle_type,
+                        name=name,
+                        x=x,
+                        y=y,
+                        z=z,
+                        takeoff_z=takeoff_z,
+                        enabled=enabled,
+                        plot_widget=self.xy_plot,
+                    ),
+                )
         if sum([vehicle_marker.enabled for vehicle_marker in self.vehicle_markers if vehicle_marker.vehicle_type == 'UAV']) > 1:
             for vehicle_marker in self.vehicle_markers:
                 vehicle_marker.enabled = False
 
     def update_parameters_file(self):
         text = ['Type, Name, Init_x, Init_y, Init_z, Takeoff_z, Enabled \n']
-        for vehicle in self.vehicle_markers:
-            line = vehicle.vehicle_type + ', '
-            line += vehicle.name + ', '
-            line += str(vehicle.init_x) + ', '
-            line += str(vehicle.init_y) + ', '
-            line += str(vehicle.init_z) + ', '
-            line += str(vehicle.takeoff_z) + ', '
-            line += str(int(vehicle.enabled)) + ' \n'
+        for vehicle_representation in self.vehicle_markers:
+            initial_state = vehicle_representation.get_actual_state().position
+            line = vehicle_representation.vehicle_type + ', '
+            line += vehicle_representation.name + ', '
+            line += str(initial_state.position.x) + ', '
+            line += str(initial_state.position.y) + ', '
+            line += str(initial_state.position.z) + ', '
+            line += str(vehicle_representation.takeoff_z) + ', '
+            line += str(int(vehicle_representation.enabled)) + ' \n'
             text.append(line)
         with open(self.parameters_filename, 'w') as file:
             file.writelines(text)
+
+    def stop(self):
+        self.stop_qtm()
 
 
 def test():
@@ -241,6 +314,7 @@ def test():
     setup_ui = SetupUI(parameters_filename=parameters_file_name)
     setup_ui.show()
     exit_code = settings_app.exec()
+    setup_ui.stop()
     sys.exit(exit_code)
 
 
