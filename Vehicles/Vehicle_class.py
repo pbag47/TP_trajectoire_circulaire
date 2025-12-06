@@ -17,24 +17,24 @@ class Vehicle:
     )
     def __init__(self, **kwargs):
         self._logger = logging.getLogger(self.__class__.__name__)
-        self.init_setup_attributes(**kwargs)
+    #     self.init_setup_attributes(**kwargs)
         self.off_camera_count: int = 0
 
-    def init_setup_attributes(self, **kwargs):
-        for key in self.setup_attributes:
-            if key not in kwargs:
-                raise AttributeError(f"Missing '{key}' setup attribute")
-            elif type(kwargs[key]) is not self.setup_attributes[key]:
-                raise AttributeError(
-                    f"Expected '{self.setup_attributes[key]}' for '{key}' setup attribute, "
-                    f"got '{type(kwargs[key])}'"
-                )
-            else:
-                setattr(self, key, kwargs[key])
+    # def init_setup_attributes(self, **kwargs):
+    #     for key in self.setup_attributes:
+    #         if key not in kwargs:
+    #             raise AttributeError(f"Missing '{key}' setup attribute")
+    #         elif type(kwargs[key]) is not self.setup_attributes[key]:
+    #             raise AttributeError(
+    #                 f"Expected '{self.setup_attributes[key]}' for '{key}' setup attribute, "
+    #                 f"got '{type(kwargs[key])}'"
+    #             )
+    #         else:
+    #             setattr(self, key, kwargs[key])
 
-    @classmethod
-    def merge_setup_attributes(cls, child_class_instance):
-        child_class_instance.setup_attributes = cls.setup_attributes | child_class_instance.setup_attributes
+    # @classmethod
+    # def merge_setup_attributes(cls, child_class_instance):
+    #     child_class_instance.setup_attributes = cls.setup_attributes | child_class_instance.setup_attributes
 
     def stop(self):
         pass
