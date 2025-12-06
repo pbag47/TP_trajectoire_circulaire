@@ -12,6 +12,10 @@ class StateBasedObject:
     def get_actual_state(self):
         return self._actual_state
 
-    def update_measured_state(self, position_marker: qtm_rt.packet.RT3DMarkerPositionNoLabel, timestamp: float):
+    def update_measured_state(
+            self,
+            position_marker: qtm_rt.packet.RT3DMarkerPositionNoLabel,
+            timestamp: float,
+            ):
         self.measured_state.update_position(position_marker, timestamp)
 

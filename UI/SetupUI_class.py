@@ -1,4 +1,5 @@
 
+import logging
 import os.path
 import pyqtgraph
 import qtm_rt
@@ -17,6 +18,7 @@ from UI.ToggleButton_class import ToggleButton
 class SetupUI(QtWidgets.QWidget):
     def __init__(self, parameters_filename: str = 'flight_parameters.txt'):
         super().__init__()
+        self._logger = logging.getLogger(__class__.__name__)
         self.qtm_handler: QTMHandler = QTMHandler()
         self.vehicle_markers: list[VehicleRepresentation] = []
         self.selected_vehicle: VehicleRepresentation | None = None
@@ -175,27 +177,27 @@ class SetupUI(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def x_changed_callback(self):
-        self.selected_vehicle._actual_state.position = qtm_rt.packet.RT3DMarkerPositionNoLabel(
+        self.selected_vehicle.initial_state.position = qtm_rt.packet.RT3DMarkerPositionNoLabel(
             x=self.initial_x_spinbox.value(),
-            y=self.selected_vehicle._actual_state.position.y,
-            z=self.selected_vehicle._actual_state.position.z,
-            id=self.selected_vehicle._actual_state.position.id
+            y=self.selected_vehicle.initial_state.position.y,
+            z=self.selected_vehicle.initial_state.position.z,
+            id=self.selected_vehicle.initial_state.position.id
         )
 
     def y_changed_callback(self):
-        self.selected_vehicle._actual_state.position = qtm_rt.packet.RT3DMarkerPositionNoLabel(
-            x=self.selected_vehicle._actual_state.position.x,
+        self.selected_vehicle.initial_state.position = qtm_rt.packet.RT3DMarkerPositionNoLabel(
+            x=self.selected_vehicle.initial_state.position.x,
             y=self.initial_y_spinbox.value(),
-            z=self.selected_vehicle._actual_state.position.z,
-            id=self.selected_vehicle._actual_state.position.id
+            z=self.selected_vehicle.initial_state.position.z,
+            id=self.selected_vehicle.initial_state.position.id
         )
 
     def z_changed_callback(self):
-        self.selected_vehicle._actual_state.position = qtm_rt.packet.RT3DMarkerPositionNoLabel(
-            x=self.selected_vehicle._actual_state.position.x,
-            y=self.selected_vehicle._actual_state.position.y,
+        self.selected_vehicle.initial_state.position = qtm_rt.packet.RT3DMarkerPositionNoLabel(
+            x=self.selected_vehicle.initial_state.position.x,
+            y=self.selected_vehicle.initial_state.position.y,
             z=self.initial_z_spinbox.value(),
-            id=self.selected_vehicle._actual_state.position.id
+            id=self.selected_vehicle.initial_state.position.id
         )
 
     @QtCore.Slot()
@@ -282,25 +284,39 @@ class SetupUI(QtWidgets.QWidget):
             _ = file.readline()
             lines = file.readlines()
             for line in lines:
-                vehicle_type, name, x, y, z, takeoff_z, enabled  = [element.strip() for element in line.split(',')]
+                (
+                    vehicle_type, name, antenna, channel, bandwidth, address,
+                    x, y, z, takeoff_z, enabled, simulated
+                )  = [element.strip() for element in line.split(',')]
                 x = float(x)
                 y = float(y)
                 z = float(z)
                 takeoff_z = float(takeoff_z)
                 enabled = bool(int(enabled))
+                simulated = bool(int(simulated))
                 self.vehicle_markers.append(
                     VehicleRepresentation(
                         vehicle_type=vehicle_type,
                         name=name,
+                        antenna=antenna,
+                        channel=channel,
+                        bandwidth=bandwidth,
+                        address=address,
                         x=x,
                         y=y,
                         z=z,
                         takeoff_z=takeoff_z,
                         enabled=enabled,
+                        simulated=simulated,
                         plot_widget=self.xy_plot,
                     ),
                 )
         if sum([vehicle_marker.enabled for vehicle_marker in self.vehicle_markers if vehicle_marker.vehicle_type == 'UAV']) > 1:
+            self._logger.warning(
+                "Multiple UAVs set to enabled in the config file. "
+                "However, this project only allows a single UAV to fly at a time. "
+                "All UAVs are now being disabled"
+            )
             for vehicle_marker in self.vehicle_markers:
                 vehicle_marker.enabled = False
 
@@ -310,11 +326,16 @@ class SetupUI(QtWidgets.QWidget):
             initial_state = vehicle_representation.get_actual_state().position
             line = vehicle_representation.vehicle_type + ', '
             line += vehicle_representation.name + ', '
+            line += vehicle_representation.antenna + ', '
+            line += vehicle_representation.channel + ', '
+            line += vehicle_representation.bandwidth + ', '
+            line += vehicle_representation.address + ', '
             line += str(initial_state.position.x) + ', '
             line += str(initial_state.position.y) + ', '
             line += str(initial_state.position.z) + ', '
             line += str(vehicle_representation.takeoff_z) + ', '
-            line += str(int(vehicle_representation.enabled)) + ' \n'
+            line += str(int(vehicle_representation.enabled)) + ', '
+            line += str(int(vehicle_representation.simulated)) + '\n'
             text.append(line)
         with open(self.parameters_filename, 'w') as file:
             file.writelines(text)

@@ -31,3 +31,14 @@ The transition from setup to real-time is crucial
 as it must generate the requested vehicle instances 
 with the attributes of abstract instances. This transition
 is yet to be implemented.
+  - This transition is handled by the 
+```flight_parameters.txt``` file, which carries information from
+setup to real-time phases. This single file is replaced by a set of 
+class-specific files in the ```config``` folder
+- A kind of "physics engine" based on dynamic fundamentals
+is intended to replace the UAV behaviour model: adding external 
+forces and perturbations like aerodynamic drag
+or wind would then be easier
+- Late feature idea: adding "obstacle" object and automatically 
+create an obstacle instance when an undeclared QTM marker 
+appears

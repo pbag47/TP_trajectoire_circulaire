@@ -5,19 +5,17 @@ import csv
 import logging
 import pynput.keyboard
 import qtm_tools
+import os
 import sys
 
-from PySide6.QtWidgets import QApplication
-from PySide6 import QtAsyncio
+from PySide6 import QtWidgets
 from quamash import QSelectorEventLoop
 from qtm_rt import QRTConnection
-from qtm_rt.packet import QRTPacket
 
 from joystick_class import Joystick
-from main_ui import Window
 from robot_class import Robot
 from swarm_object_class import SwarmObject
-from UI.SetupUI import SetupUI
+from UI import SetupUI
 
 
 logger = logging.getLogger(__name__)
@@ -51,78 +49,32 @@ def detect_keyboard_input():
     return queue
 
 
-async def start_qtm_streaming(connection: QRTConnection, callback):
-    """ Starts a QTM stream, and assigns a callback method to run each time a QRTPacket is received from QTM
-     This method is made to run forever in an asyncio event loop """
-    logger.info('QTM streaming started')
-    await connection.stream_frames(components=['3dnolabels'], on_packet=callback)
-
-
-async def stop_qtm_streaming(connection: QRTConnection):
-    await connection.stream_frames_stop()
-    logger.info('QTM streaming stopped')
-
-
-def packet_reception_callback(packet: QRTPacket):
-    global SWARM_MANAGER
-    global RUN_TRACKER
-
-    if not RUN_TRACKER:
-        logger.error('QTM packet callback interrupted by the reception of a new packet')
-        for agents_to_stop in SWARM_MANAGER.swarm_agent_list:
-            agents_to_stop.stop()
-        raise BlockingIOError('High delay detected, unable to keep up with real-time processing rate')
-
-    RUN_TRACKER = False
-    timestamp = packet.timestamp * 10**-6
-    headers, markers = packet.get_3d_markers_no_label()
-    qtm_tools.tracking(SWARM_MANAGER.swarm_agent_list, SWARM_MANAGER.robot_list, markers, timestamp)
-    SWARM_MANAGER.flight_sequence()
-    RUN_TRACKER = True
-
 
 def main():
-    global SWARM_MANAGER
-    global RUN_TRACKER
-
     # -- Flight parameters ------------------------------------------------------- #
     qtm_ip_address: str = '192.168.0.1'
     agents_list = cf_info.init_agents()
     rbt = Robot('Cible')
 
-    # -- Logging configuration --------------------------------------------------- #
-    log_level = logging.WARNING
-    all_loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
-    for log in all_loggers:
-        log.setLevel(log_level)
-    logging.getLogger('joystick_class').setLevel(logging.INFO)
-    logger.setLevel(logging.INFO)
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(levelname)s -  %(name)s  - %(message)s',
+        filename=__name__ + '.log',
+    )
 
-    # -- User interface setup ---------------------------------------------------- #
-    settings_app = QApplication([])
-    setup_ui = SetupUI(list_of_agents=agents_list,
-                       robot=rbt,
-                       parameters_filename='flight_parameters.txt')
+    settings_app = QtWidgets.QApplication([])
+    parameters_file_name = os.path.join('..', 'flight_parameters.txt')
+    setup_ui = SetupUI(parameters_filename=parameters_file_name)
     setup_ui.show()
+    # -- Settings app         ---------------------------------------------------- #
     exit_code = settings_app.exec()
+    # -- Settings app         ---------------------------------------------------- #
+    setup_ui.stop()
+
+    for vehicle in setup_ui.vehicle_markers:
 
 
-    # settings_app = QApplication(sys.argv)
-    # user_window = Window(uavs=agents_list, robot=rbt, parameters_filename='flight_parameters.txt')
 
-    # -- Asyncio loop setup ------------------------------------------------------ #
-    event_loop = QSelectorEventLoop(settings_app)
-    asyncio.set_event_loop(event_loop)
-
-    # -- QTM connection ---------------------------------------------------------- #
-    qtm_connection: QRTConnection = asyncio.get_event_loop().run_until_complete(
-        qtm_tools.connect_to_qtm(qtm_ip_address))
-
-    # -- Asyncio loop run (user interface + QTM streaming) ----------------------- #
-    if not qtm_connection:
-        logger.warning('QTM not connected, displaying UI in settings-only mode')
-        exit_code = settings_app.exec()
-        sys.exit(exit_code)
 
     logger.info('UI real-time processing loop started')
     asyncio.ensure_future(start_qtm_streaming(qtm_connection, user_window.update_graph))
@@ -186,6 +138,4 @@ def main():
 
 
 if __name__ == '__main__':
-    global SWARM_MANAGER
-    global RUN_TRACKER
     main()
