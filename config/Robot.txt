@@ -1,2 +1,2 @@
-Name,   Init_x,     Init_y,     Init_z,     Simulated
-Cible,  0.0,        1.0,        0.0,        0
+Name,Init_x,Init_y,Init_z,Simulated
+Cible,0.0,1.0,0.0,0

@@ -1,6 +1,8 @@
 import os
 from typing import Any
 
+from Vehicles import UAV
+
 
 class ConfigFileManager:
     def __init__(self, config_folder_path="config"):
@@ -34,8 +36,29 @@ class ConfigFileManager:
             list_of_instances.append(class_object(**instance_arguments))
         return list_of_instances
 
-    def save_as_config_file(self, list_of_instances):
-        pass
+    def save_config(self, instances_to_save: list[list]):
+        """
+        :param instances_to_save: All instances gathered by types -
+            [[list of instances type 1], [list of instances type 2], ...]
+        """
+        for list_of_instances in instances_to_save:
+            try:
+                class_object = list_of_instances[0].__class__
+            except IndexError:
+                continue
+            config_file_path = os.path.join(self.config_folder_path, class_object.__name__ + ".txt")
+            header = [",".join(attribute_name for attribute_name in class_object.setup_attributes.keys())]
+            lines = []
+            for instance in list_of_instances:
+                line_elements = []
+                for setup_attribute_name in class_object.setup_attributes.keys():
+                    value = getattr(instance, setup_attribute_name)
+                    value_str = convert_any_to_str(value)
+                    line_elements.append(value_str)
+                lines.append(",".join(line_elements))
+            data_str = '\n'.join(header + lines)
+            with open(config_file_path, 'w') as file:
+                file.writelines(data_str)
 
 
 def convert_str_to_any(input_str: str, output_type: type) -> Any:
@@ -52,3 +75,13 @@ def convert_any_to_str(input_any: Any) -> str:
     else:
         output = str(input_any)
     return output
+
+
+def main():
+    config_manager = ConfigFileManager()
+    list_of_instances = config_manager.generate_instances(class_object=UAV)
+    config_manager.save_config([list_of_instances])
+
+
+if __name__ == "__main__":
+    main()

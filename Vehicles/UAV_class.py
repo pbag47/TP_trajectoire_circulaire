@@ -2,7 +2,7 @@ from Vehicles.Vehicle_class import Vehicle
 
 
 class UAV(Vehicle):
-    setup_attributes = Vehicle.setup_attributes + dict(
+    setup_attributes = Vehicle.setup_attributes | dict(
         Antenna = str,
         Channel = str,
         Bandwidth = str,

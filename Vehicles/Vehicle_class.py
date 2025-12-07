@@ -1,6 +1,5 @@
 
 import logging
-from typing import Self
 
 # from UI.VehicleRepresentation_class import VehicleRepresentation
 ## The entire "Vehicles" module has to be imported for Vehicle subclasses detection.
@@ -17,8 +16,17 @@ class Vehicle:
     )
     def __init__(self, **kwargs):
         self._logger = logging.getLogger(self.__class__.__name__)
-    #     self.init_setup_attributes(**kwargs)
         self.off_camera_count: int = 0
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        self.check_init()
+
+    def check_init(self):
+        for setup_attribute in self.setup_attributes:
+            if not hasattr(self, setup_attribute):
+                error = AttributeError(f"Attribute '{setup_attribute}' is not defined")
+                self._logger.error(error)
+                raise error
 
     # def init_setup_attributes(self, **kwargs):
     #     for key in self.setup_attributes:
