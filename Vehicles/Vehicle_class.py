@@ -1,6 +1,9 @@
 
 import logging
 
+from PySide6 import QtCore
+from typing import Any
+
 # from UI.VehicleRepresentation_class import VehicleRepresentation
 ## The entire "Vehicles" module has to be imported for Vehicle subclasses detection.
 ## Otherwise, the UAV and Robot classes will not be detected in the "from_representation" method
@@ -27,6 +30,14 @@ class Vehicle:
                 error = AttributeError(f"Attribute '{setup_attribute}' is not defined")
                 self._logger.error(error)
                 raise error
+
+    @QtCore.Slot(str, Any)
+    def edit_setup_attribute(self, name: str, value: Any):
+        if name not in self.setup_attributes.keys():
+            raise AttributeError(f"Attribute '{name}' is not defined as a setup attribute")
+        if type(value) is not self.setup_attributes[name]:
+            raise TypeError(f"Attribute '{name}': expected {str(self.setup_attributes[name])}, received {str(type(value))}")
+        setattr(self, name, value)
 
     # def init_setup_attributes(self, **kwargs):
     #     for key in self.setup_attributes:

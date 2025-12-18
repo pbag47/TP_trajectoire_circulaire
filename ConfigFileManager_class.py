@@ -2,11 +2,12 @@ import os
 from typing import Any
 
 from Vehicles import UAV
+from paths import ROOT_PATH
 
 
 class ConfigFileManager:
     def __init__(self, config_folder_path="config"):
-        self.config_folder_path = config_folder_path
+        self.config_folder_path = os.path.join(ROOT_PATH, config_folder_path)
 
     def generate_instances(self, class_object) -> list:
         config_file_path = os.path.join(self.config_folder_path, class_object.__name__ + ".txt")

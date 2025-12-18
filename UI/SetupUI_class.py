@@ -6,6 +6,7 @@ import qtm_rt
 import sys
 
 from PySide6 import QtWidgets, QtGui, QtCore
+from PySide6.QtWidgets import QGridLayout
 
 import math_tools
 from QTM import QTMHandler
@@ -13,6 +14,15 @@ from QTM.QTMConnection_class import QTMConnection
 from QTM.QTMVirtualConnection_class import QTMVirtualConnection
 from UI.VehicleRepresentation_class import VehicleRepresentation
 from UI.ToggleButton_class import ToggleButton
+
+
+class InstanceSelector(QtWidgets.QWidget):
+    def __init__(self, multiple_selection: bool = True, parent=None):
+        super(InstanceSelector, self).__init__(parent)
+        self.multiple_selection: bool = multiple_selection
+        self.layout = QGridLayout(self)
+
+
 
 
 class SetupUI(QtWidgets.QWidget):

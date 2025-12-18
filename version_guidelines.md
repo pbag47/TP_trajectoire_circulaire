@@ -35,6 +35,8 @@ is yet to be implemented.
 ```flight_parameters.txt``` file, which carries information from
 setup to real-time phases. This single file is replaced by a set of 
 class-specific files in the ```config``` folder
+  - The ConfigFileManager class is called to handle config files,
+now there is one config file per class type
 - A kind of "physics engine" based on dynamic fundamentals
 is intended to replace the UAV behaviour model: adding external 
 forces and perturbations like aerodynamic drag
